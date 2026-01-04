@@ -132,17 +132,17 @@ jobs:
       run: |
         export ENVIRONMENT=${{ needs.build1.outputs.autoDeployEnv }}
         export ARGOCD_BRANCH=${{ needs.build1.outputs.autoDeployBranch }}
-        export VALUE_FILE_DIR="values-files/please-protect-apis"
-        export VALUE_FILE=${VALUE_FILE_DIR}/please-protect-apis-03-${ARGOCD_BRANCH}-image-tag.yaml
+        export VALUE_FILE_DIR="values-files/pp-api"
+        export VALUE_FILE=${VALUE_FILE_DIR}/pp-api-03-${ARGOCD_BRANCH}-image-tag.yaml
         export IMAGE_TAG1=${{ needs.build1.outputs.imageTag }}
         git config --global user.email "cicd-auto@otep.com"
         git config --global user.name "CICD"
 
-        git clone "https://cicd-token:${GH_TOKEN}@github.com/wintech-thai/please-protect-argocd-apps" deployment
+        git clone "https://cicd-token:${GH_TOKEN}@github.com/wintech-thai/please-protect-appliance-apps" deployment
         cd deployment
         git checkout ${ARGOCD_BRANCH}
         
-        cp ${VALUE_FILE_DIR}/please-protect-apis-02-image-tag-template.yaml ${VALUE_FILE}
+        cp ${VALUE_FILE_DIR}/pp-api-02-image-tag-template.yaml ${VALUE_FILE}
         sed -i "s#<<image-tag>>#${IMAGE_TAG1}#g" ${VALUE_FILE}
         ls -lrt
         cat ${VALUE_FILE}
