@@ -1,0 +1,7 @@
+*/bin/*
+*/obj/*
+.env
+.token
+env.rb
+*.tmp
+sa.json
