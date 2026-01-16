@@ -4,7 +4,7 @@ using RedLockNet.SERedis.Configuration;
 using System.Text.Json;
 using StackExchange.Redis;
 
-namespace Its.Otep.Api.Utils
+namespace Its.PleaseProtect.Api.Utils
 {
     public class RedisHelper : IRedisHelper
     {

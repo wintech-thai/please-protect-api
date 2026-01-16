@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using IndexAttribute = Microsoft.EntityFrameworkCore.IndexAttribute;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Its.Otep.Api.Models
+namespace Its.PleaseProtect.Api.Models
 {
     [ExcludeFromCodeCoverage]
     [Table("MasterRefs")]

@@ -1,5 +1,5 @@
 
-namespace Its.Otep.Api.Utils
+namespace Its.PleaseProtect.Api.Utils
 {
     public class CacheHelper
     {

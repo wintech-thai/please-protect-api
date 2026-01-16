@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using Its.Otep.Api.Models;
+using Its.PleaseProtect.Api.Models;
 
-namespace Its.Otep.Api.ModelsViews
+namespace Its.PleaseProtect.Api.ModelsViews
 {
     [ExcludeFromCodeCoverage]
     public class MVMasterRef

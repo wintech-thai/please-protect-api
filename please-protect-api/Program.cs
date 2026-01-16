@@ -1,13 +1,19 @@
 using Serilog;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
-using Its.Otep.Api.Database.Seeders;
-using Its.Otep.Api.Database;
+using Its.PleaseProtect.Api.Database.Seeders;
+using Its.PleaseProtect.Api.Database;
 using StackExchange.Redis;
-using Its.Otep.Api.Utils;
+using Its.PleaseProtect.Api.Utils;
+using Its.PleaseProtect.Api.Database.Repositories;
+using Its.PleaseProtect.Api.Services;
+using Microsoft.AspNetCore.Authorization;
+using Its.PleaseProtect.Api.Authorizations;
+using Its.PleaseProtect.Api.Authentications;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.ResponseCompression;
 
-
-namespace Its.Otep.Api
+namespace Its.PleaseProtect.Api
 {
     [ExcludeFromCodeCoverage]
     class Program
@@ -33,7 +39,10 @@ namespace Its.Otep.Api
             var redisHostStr = $"{cfg["Redis:Host"]}:{cfg["Redis:Port"]}"; 
             builder.Services.AddSingleton<IConnectionMultiplexer>(
                 sp => ConnectionMultiplexer.Connect(redisHostStr));
+
             builder.Services.AddScoped<RedisHelper>();
+            builder.Services.AddSingleton<IRedisHelper, RedisHelper>();
+
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -43,10 +52,52 @@ namespace Its.Otep.Api
             builder.Services.AddTransient<DataSeeder>();
 
             builder.Services.AddScoped<IDataContext, DataContext>();
+            builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+            builder.Services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+            builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
+            builder.Services.AddScoped<IOrganizationUserRepository, OrganizationUserRepository>();
+            builder.Services.AddScoped<IJobRepository, JobRepository>();
+
+
+            builder.Services.AddScoped<IRoleService, RoleService>();
+            builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+            builder.Services.AddScoped<IOrganizationUserService, OrganizationUserService>();
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IDocumentService, DocumentService>();
+            builder.Services.AddScoped<IJobService, JobService>();
+            builder.Services.AddScoped<IObjectStorageService, MinioObjectStorageService>();
+
+
+            builder.Services.AddTransient<IAuthorizationHandler, GenericRbacHandler>();
+            builder.Services.AddScoped<IBasicAuthenticationRepo, BasicAuthenticationRepo>();
+            builder.Services.AddScoped<IBearerAuthenticationRepo, BearerAuthenticationRepo>();
 
             builder.Services.AddHttpClient();
             builder.Services.AddHealthChecks();
 
+
+            builder.Services.AddAuthentication("BasicOrBearer")
+                .AddScheme<AuthenticationSchemeOptions, AuthenticationHandlerProxy>("BasicOrBearer", null);
+
+            builder.Services.AddAuthorization(options => {
+                var defaultAuthorizationPolicyBuilder = new AuthorizationPolicyBuilder("BasicOrBearer");
+                defaultAuthorizationPolicyBuilder = defaultAuthorizationPolicyBuilder.RequireAuthenticatedUser();
+                options.DefaultPolicy = defaultAuthorizationPolicyBuilder.Build();
+
+                options.AddPolicy("GenericRolePolicy", policy => policy.AddRequirements(new GenericRbacRequirement()));
+            });
+            
+            // เปิด middleware สำหรับ gzip
+            builder.Services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true; // ให้บีบอัดแม้เป็น HTTPS
+                options.Providers.Add<GzipCompressionProvider>();
+            });
+            
             var app = builder.Build();
 
             using (var scope = app.Services.CreateScope())

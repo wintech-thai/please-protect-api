@@ -1,7 +1,7 @@
 
 using RedLockNet;
 
-namespace Its.Otep.Api.Utils
+namespace Its.PleaseProtect.Api.Utils
 {
     public interface IRedisHelper
     {
