@@ -1,5 +1,5 @@
 
-namespace Its.Otep.Api.Services
+namespace Its.PleaseProtect.Api.Services
 {
     public class BaseService
     {

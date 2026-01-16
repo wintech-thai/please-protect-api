@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Its.Otep.Api.Utils
+namespace Its.PleaseProtect.Api.Utils
 {
     public static class EncryptionUtils
     {

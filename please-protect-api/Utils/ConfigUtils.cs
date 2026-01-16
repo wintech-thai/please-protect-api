@@ -1,4 +1,4 @@
-namespace Its.Otep.Api.Utils
+namespace Its.PleaseProtect.Api.Utils
 {
     public static class ConfigUtils
     {

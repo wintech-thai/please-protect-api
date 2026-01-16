@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Its.Otep.Api.Utils
+namespace Its.PleaseProtect.Api.Utils
 {
     public static class ValidationUtils
     {

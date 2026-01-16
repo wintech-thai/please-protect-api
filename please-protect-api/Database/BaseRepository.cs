@@ -1,4 +1,4 @@
-namespace Its.Otep.Api.Database.Repositories
+namespace Its.PleaseProtect.Api.Database.Repositories
 {
     public class BaseRepository
     {
