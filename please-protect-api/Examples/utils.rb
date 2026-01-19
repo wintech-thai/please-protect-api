@@ -43,6 +43,7 @@ def make_request(method, apiName, data)
 
   http = Net::HTTP.new(uri.host, uri.port)  
   http.use_ssl = (uri.scheme == "https")
+  http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
   response = http.request(request)
 
