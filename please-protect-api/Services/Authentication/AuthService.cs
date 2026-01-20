@@ -42,15 +42,16 @@ namespace Its.PleaseProtect.Api.Services
             clientId = Environment.GetEnvironmentVariable("IDP_CLIENT_ID");
             clientSecret = Environment.GetEnvironmentVariable("IDP_CLIENT_SECRET");
 
-            issuer = $"{urlPrefix}/{authPath}/realms/{realm}";
-            tokenEndpoint = $"{urlPrefix}/{authPath}/realms/{realm}/protocol/openid-connect/token";
-            signedKeyUrl = $"{urlPrefix}/{authPath}/realms/{realm}/protocol/openid-connect/certs";
+            issuer = $"{urlPrefix}{authPath}/realms/{realm}";
+//Console.WriteLine($"DEBUG_AUTH1 issuer=[{issuer}]");
+            tokenEndpoint = $"{urlPrefix}{authPath}/realms/{realm}/protocol/openid-connect/token";
+            signedKeyUrl = $"{urlPrefix}{authPath}/realms/{realm}/protocol/openid-connect/certs";
 
-            userEndpoint = $"{urlPrefix}/{authPath}/admin/realms/{realm}/users";
-            chagePasswordEndpoint = $"{urlPrefix}/{authPath}/admin/realms/{realm}/users/<<user-id>>/reset-password";
-            updateUserEndpoint = $"{urlPrefix}/{authPath}/admin/realms/{realm}/users/<<user-id>>";
-            logoutEndpoint = $"{urlPrefix}/{authPath}/admin/realms/{realm}/users/<<user-id>>/logout";
-            getUserIdEndpoint = $"{urlPrefix}/{authPath}/admin/realms/{realm}/users?username=<<user-name>>";
+            userEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users";
+            chagePasswordEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users/<<user-id>>/reset-password";
+            updateUserEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users/<<user-id>>";
+            logoutEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users/<<user-id>>/logout";
+            getUserIdEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users?username=<<user-name>>";
         }
 
         private string GetPreferredUsername(string accessToken)
