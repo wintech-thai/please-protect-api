@@ -17,5 +17,6 @@ namespace Its.PleaseProtect.Api.Database
         public DbSet<MCustomRole>? CustomRoles { get; set; }
         public DbSet<MDocument>? Documents { get; set; }
         public DbSet<MJob>? Jobs { get; set; }
+        public DbSet<MIoC>? Iocs { get; set; }
     }
 }
