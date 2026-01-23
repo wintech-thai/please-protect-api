@@ -18,5 +18,6 @@ namespace Its.PleaseProtect.Api.Database
         public DbSet<MDocument>? Documents { get; set; }
         public DbSet<MJob>? Jobs { get; set; }
         public DbSet<MIoC>? Iocs { get; set; }
+        public DbSet<MSubnet>? Subnets { get; set; }
     }
 }

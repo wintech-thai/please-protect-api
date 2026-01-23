@@ -24,6 +24,7 @@ public class DataContext : DbContext, IDataContext
     public DbSet<MDocument>? Documents { get; set; }
     public DbSet<MJob>? Jobs { get; set; }
     public DbSet<MIoC>? Iocs { get; set; }
+    public DbSet<MSubnet>? Subnets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +59,12 @@ public class DataContext : DbContext, IDataContext
 
         modelBuilder.Entity<MIoC>()
             .HasIndex(t => new { t.OrgId, t.IocType, t.DataSet, t.IocValue, t.IocSubType }).IsUnique();
+
+        modelBuilder.Entity<MSubnet>()
+            .HasIndex(t => new { t.OrgId, t.Cidr }).IsUnique();
+
+        modelBuilder.Entity<MSubnet>()
+            .HasIndex(t => new { t.OrgId, t.Name }).IsUnique();
 
         modelBuilder.Entity<MJob>();
     }
