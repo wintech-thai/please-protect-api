@@ -295,12 +295,12 @@ namespace Its.PleaseProtect.Api.Services
 
                     var subnetName = subnet.Name!;
                     var cidr = subnet.Cidr!;
-                    var cacheKey = CacheHelper.CreateSubnetCacheKey(orgId, subnetName);
+                    var cacheKey = CacheHelper.CreateSubnetCacheKey(orgId, cidr);
 
                     //Load this to Redis
-                    _ = _redis.SetObjectAsync(cacheKey, cidr);
+                    _ = _redis.SetObjectAsync(cacheKey, subnetName);
 
-                    Log.Information($"Cached [{seq}] [{cacheKey}] with value [{cidr}]");
+                    Log.Information($"Cached [{seq}] [{cacheKey}] with value [{subnetName}]");
                 }
             }
 
