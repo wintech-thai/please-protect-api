@@ -10,6 +10,7 @@ namespace Its.PleaseProtect.Api.Utils
         public Task<T?> GetObjectAsync<T>(string key);
         public Task<string> PublishMessageAsync(string stream, string message);
         public Task<bool> DeleteAsync(string key);
+        public Task<Dictionary<string, string>> GetKeys(string pattern);
         public Task<IRedLock> AcquireRedLockAsync(
             string resource,
             TimeSpan expiry,

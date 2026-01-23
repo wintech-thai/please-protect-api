@@ -5,6 +5,7 @@ using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
 using System.Net;
 using Serilog;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Its.PleaseProtect.Api.Services
 {
@@ -130,7 +131,8 @@ namespace Its.PleaseProtect.Api.Services
             var result = await repository!.AddSubnet(subnet);
             r.Subnet = result;
 
-            //TODO : Update redis cache to notify CIDR changed
+            //Update redis cache to notify CIDR changed
+            _ = await UpdateSubnetsCache(orgId);
 
             return r;
         }
@@ -162,7 +164,8 @@ namespace Its.PleaseProtect.Api.Services
                 return r;
             }
 
-            //TODO : Update redis cache & notify CIDR changed
+            //Update redis cache & notify CIDR changed
+            _ = await UpdateSubnetsCache(orgId);
 
             r.Subnet = m;
             return r;
@@ -258,7 +261,8 @@ namespace Its.PleaseProtect.Api.Services
 
             r.Subnet = result;
 
-            //TODO : Update redis cache & notify CIDR changed
+            //Update redis cache & notify CIDR changed
+            _ = await UpdateSubnetsCache(orgId);
 
             return r;
         }
@@ -275,6 +279,10 @@ namespace Its.PleaseProtect.Api.Services
             {
                 FullTextSearch = ""
             };
+
+            var keyPattern = CacheHelper.CreateSubnetCacheKey(orgId, "*");
+            var existingKeys = await _redis.GetKeys(keyPattern);
+            var keysFromDb = new Dictionary<string, string>();
  
             var itemCount = await GetSubnetCount(orgId, param);
             var itemPerPage = 300;
@@ -296,11 +304,22 @@ namespace Its.PleaseProtect.Api.Services
                     var subnetName = subnet.Name!;
                     var cidr = subnet.Cidr!;
                     var cacheKey = CacheHelper.CreateSubnetCacheKey(orgId, cidr);
+                    keysFromDb.Add(cacheKey, "");
 
                     //Load this to Redis
                     _ = _redis.SetObjectAsync(cacheKey, subnetName);
 
                     Log.Information($"Cached [{seq}] [{cacheKey}] with value [{subnetName}]");
+                }
+            }
+
+            //ให้ลบทิ้งถ้ามีอยู่ใน Redis แต่ไม่มีใน DB
+            foreach (var key in existingKeys.Keys)
+            {
+                if (!keysFromDb.ContainsKey(key))
+                {
+                    Log.Information($"Deleted [{key}] from Redis");
+                    await _redis.DeleteAsync(key);
                 }
             }
 
