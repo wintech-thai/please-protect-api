@@ -323,6 +323,13 @@ namespace Its.PleaseProtect.Api.Services
                 }
             }
 
+            var versionId = Guid.NewGuid().ToString();
+            var versionCacheKey = CacheHelper.CreateSubnetCacheVersionKey(orgId);
+
+            //โปรแกรมตัวที่เอา cache ไปใช้จะดูว่าค่าตรงนี้เปลี่ยนก็จะ load ของใหม่จาก redis ไปไว้ใน memory ของตัวเอง
+            await _redis.SetAsync(versionCacheKey, versionId);
+            Log.Information($"Updated version key [{versionCacheKey}] with value [{versionId}]");
+
             r.ItemCount = seq;
 
             return r;

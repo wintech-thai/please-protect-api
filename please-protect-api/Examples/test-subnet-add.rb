@@ -14,8 +14,8 @@ orgId = ENV['API_ORG']
 
 apiUrl = "api/Subnet/org/#{orgId}/action/AddSubnet"
 param = {
-  Cidr: "192.168.2.0/24",
-  Name: "Home net internal #2",
+  Cidr: "192.168.5.0/24",
+  Name: "Home net internal #5",
   Tags: "internal",
 }
 

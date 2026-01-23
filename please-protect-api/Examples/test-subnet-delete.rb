@@ -11,7 +11,7 @@ $stdout.sync = true
 load_env("./.env")
 
 orgId = ENV['API_ORG']
-id = 'a8792fcb-6d2f-4ba2-adcc-3f51d3ff8170'
+id = 'f224b7c2-d82f-49a2-a323-e9a064ca3e5d'
 
 apiUrl = "api/Subnet/org/#{orgId}/action/DeleteSubnetById/#{id}"
 param = nil
