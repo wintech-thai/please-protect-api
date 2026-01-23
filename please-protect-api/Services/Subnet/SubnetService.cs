@@ -4,6 +4,7 @@ using Its.PleaseProtect.Api.ViewsModels;
 using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
 using System.Net;
+using Serilog;
 
 namespace Its.PleaseProtect.Api.Services
 {
@@ -269,6 +270,41 @@ namespace Its.PleaseProtect.Api.Services
                 Status = "OK",
                 Description = "Success"
             };
+
+            var param = new VMSubnet()
+            {
+                FullTextSearch = ""
+            };
+ 
+            var itemCount = await GetSubnetCount(orgId, param);
+            var itemPerPage = 300;
+
+            int pageCount = (int) Math.Ceiling((double) itemCount / itemPerPage);
+            int seq = 0;
+            for (var i=0; i<pageCount; i++)
+            {
+                seq++;
+
+                var offset = i * itemPerPage + 1; //Offset จะเริ่มจาก 1, ไม่ใช่ zero base
+                param.Limit = itemPerPage;
+                param.Offset = offset;
+
+                var items = await GetSubnets(orgId, param);
+
+                foreach (var subnet in items)
+                {
+                    var subnetName = subnet.Name!;
+                    var cidr = subnet.Cidr!;
+                    var cacheKey = CacheHelper.CreateSubnetCacheKey(orgId, subnetName);
+
+                    //Load this to Redis
+                    _ = _redis.SetObjectAsync(cacheKey, cidr);
+
+                    Log.Information($"Cached [{seq}] [{cacheKey}] with value [{cidr}]");
+                }
+            }
+
+            r.ItemCount = seq;
 
             return r;
         }

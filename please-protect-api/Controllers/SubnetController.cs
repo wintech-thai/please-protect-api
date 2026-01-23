@@ -73,8 +73,8 @@ namespace Its.PleaseProtect.Api.Controllers
         }
 
         [HttpPost]
-        [Route("org/{id}/action/UpdateSubnetsCacche")]
-        public async Task<IActionResult> UpdateSubnetsCacche(string id)
+        [Route("org/{id}/action/UpdateSubnetsCache")]
+        public async Task<IActionResult> UpdateSubnetsCache(string id)
         {
             var result = await svc.UpdateSubnetsCache(id);
             return Ok(result);
