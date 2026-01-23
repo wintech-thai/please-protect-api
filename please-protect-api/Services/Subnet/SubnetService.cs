@@ -283,8 +283,6 @@ namespace Its.PleaseProtect.Api.Services
             int seq = 0;
             for (var i=0; i<pageCount; i++)
             {
-                seq++;
-
                 var offset = i * itemPerPage + 1; //Offset จะเริ่มจาก 1, ไม่ใช่ zero base
                 param.Limit = itemPerPage;
                 param.Offset = offset;
@@ -293,6 +291,8 @@ namespace Its.PleaseProtect.Api.Services
 
                 foreach (var subnet in items)
                 {
+                    seq++;
+
                     var subnetName = subnet.Name!;
                     var cidr = subnet.Cidr!;
                     var cacheKey = CacheHelper.CreateSubnetCacheKey(orgId, subnetName);
