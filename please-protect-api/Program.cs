@@ -61,6 +61,7 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<IJobRepository, JobRepository>();
             builder.Services.AddScoped<IIoCRepository, IoCRepository>();
             builder.Services.AddScoped<ISubnetRepository, SubnetRepository>();
+            builder.Services.AddScoped<ICustomRoleRepository, CustomRoleRepository>();
 
 
             builder.Services.AddScoped<IRoleService, RoleService>();
@@ -72,6 +73,7 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<IDocumentService, DocumentService>();
             builder.Services.AddScoped<IJobService, JobService>();
             builder.Services.AddScoped<IIoCService, IoCService>();
+            builder.Services.AddScoped<ICustomRoleService, CustomRoleService>();
             builder.Services.AddScoped<ISubnetService, SubnetService>();
             builder.Services.AddScoped<IObjectStorageService, MinioObjectStorageService>();
 
