@@ -63,6 +63,20 @@ namespace Its.PleaseProtect.Api.Utils
             return key;
         }
 
+        public static string CreateSubnetCacheKey(string orgId, string cidr)
+        {
+            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Local";
+            var key = $"Subnet:{orgId}:{environment}:{cidr}";
+            return key;
+        }
+
+        public static string CreateSubnetCacheVersionKey(string orgId)
+        {
+            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Local";
+            var key = $"SubnetCachedVersion:{orgId}:{environment}";
+            return key;
+        }
+
         public static string CreateScanItemActionKey(string orgId)
         {
             //TODO : Use environment as key component

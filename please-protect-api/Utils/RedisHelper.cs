@@ -20,6 +20,35 @@ namespace Its.PleaseProtect.Api.Utils
             });
         }
 
+        public async Task<Dictionary<string, string>> GetKeys(string pattern)
+        {
+            var keys = new Dictionary<string, string>();
+
+            // ดึง ConnectionMultiplexer จาก IDatabase
+            var muxer = _db.Multiplexer;
+
+            foreach (var endpoint in muxer.GetEndPoints())
+            {
+                var server = muxer.GetServer(endpoint);
+
+                // ข้าม endpoint ที่ไม่รองรับคำสั่งนี้ (เช่น replica ที่ไม่พร้อม)
+                if (!server.IsConnected || server.IsReplica)
+                    continue;
+
+                // SCAN ด้วย pattern
+                foreach (var key in server.Keys(
+                            database: _db.Database,
+                            pattern: pattern))
+                {
+                    keys.Add(key.ToString(), "");
+                }
+            }
+
+            // method เป็น async แต่ไม่มี await จริง
+            await Task.CompletedTask;
+            return keys;
+        }
+
         public Task<bool> SetAsync(string key, string value, TimeSpan? expiry = null)
             => _db.StringSetAsync(key, value, expiry);
 
