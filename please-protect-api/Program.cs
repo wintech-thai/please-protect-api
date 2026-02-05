@@ -12,6 +12,7 @@ using Its.PleaseProtect.Api.Authorizations;
 using Its.PleaseProtect.Api.Authentications;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
+using Its.PleaseProtect.Api.AuditLogs;
 
 namespace Its.PleaseProtect.Api
 {
@@ -122,6 +123,7 @@ namespace Its.PleaseProtect.Api
                 app.UseSwaggerUI();
             }
 
+            app.UseMiddleware<AuditLogMiddleware>();
             app.MapHealthChecks("/health");
             app.UseHttpsRedirection();
             app.UseAuthentication();
