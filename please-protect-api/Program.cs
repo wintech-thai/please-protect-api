@@ -77,6 +77,7 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<ICustomRoleService, CustomRoleService>();
             builder.Services.AddScoped<ISubnetService, SubnetService>();
             builder.Services.AddScoped<IObjectStorageService, MinioObjectStorageService>();
+            builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
 
 
             builder.Services.AddTransient<IAuthorizationHandler, GenericRbacHandler>();
