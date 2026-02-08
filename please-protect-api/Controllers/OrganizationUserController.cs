@@ -210,6 +210,15 @@ namespace Prom.LPR.Api.Controllers
                 return Ok(mv);
             }
 
+            if (user.UserStatus != "Active")
+            {
+                mv.Status = "USER_NOT_ACTIVE";
+                mv.Description = $"User status is [{user.UserStatus}] for org user ID [{orgUserId}] !!!";
+
+                Response.Headers.Append("CUST_STATUS", mv.Status);
+                return Ok(mv);
+            }
+
             var reg = new MUserRegister()
             {
                 Email = user.UserEmail,
