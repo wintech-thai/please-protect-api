@@ -12,7 +12,7 @@ $stdout.sync = true
 ################### Main #######################
 load_env("./.env")
 
-url = "https://register.otep.triple-t.co/default/user-signup-confirm/d70c4192-e053-4230-b751-749c0bc38347?data=eyJFbWFpbCI6InBqYW1lLmZiQGdtYWlsLmNvbSIsIlVzZXJOYW1lIjoic2V1YnBvbmcubW9uIiwiUGFzc3dvcmQiOm51bGwsIk5hbWUiOm51bGwsIkxhc3RuYW1lIjpudWxsLCJJbnZpdGVkQnkiOiJhcGkiLCJPcmdVc2VySWQiOiI5NDFjNzdlOC0yMTNhLTQ1N2UtOTg5Yi03NTI1Zjc2MzU4NTUifQ%3d%3d"
+url = "https://abc.com/user-signup-confirm/e69498ff-5cd5-4c43-a01f-a06c71a8e33b?data=eyJFbWFpbCI6InBqYW1lLmZiMkBnbWFpbC5jb20iLCJVc2VyTmFtZSI6InNldWJwb25nLm1vbjIiLCJQYXNzd29yZCI6bnVsbCwiTmFtZSI6bnVsbCwiTGFzdG5hbWUiOm51bGwsIkludml0ZWRCeSI6ImFwaSIsIk9yZ1VzZXJJZCI6IjZiMjkzNDcwLTQxMWEtNGZmYS1hNDA0LTBmODk5ZGZkMDA5MCJ9"
 uri = URI.parse(url)
 
 # แปลง query string เป็น hash
@@ -25,9 +25,9 @@ parts = path.split('/').reject(&:empty?)
 decoded = Base64.decode64(data)
 dataObj = JSON.parse(decoded)
 
-orgId = parts[0]
-regType = parts[1]
-token = parts[2]
+orgId = 'default'
+regType = parts[0]
+token = parts[1]
 
 api = "ConfirmNewUserInvitation"
 if (regType != 'user-signup-confirm')
