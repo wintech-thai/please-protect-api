@@ -13,6 +13,8 @@ using Its.PleaseProtect.Api.Authentications;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
 using Its.PleaseProtect.Api.AuditLogs;
+using System.Text;
+using System.Net.Http.Headers;
 
 namespace Its.PleaseProtect.Api
 {
@@ -85,8 +87,40 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<IBearerAuthenticationRepo, BearerAuthenticationRepo>();
 
             builder.Services.AddHttpClient();
-            builder.Services.AddHealthChecks();
+            builder.Services.AddHttpClient("es-proxy", c =>
+            {
+                var url  = Environment.GetEnvironmentVariable("ES_URL");
+                var user = Environment.GetEnvironmentVariable("ES_USER");
+                var pass = Environment.GetEnvironmentVariable("ES_PASSWORD");
 
+                if (string.IsNullOrWhiteSpace(url))
+                    throw new Exception("ES_URL is not set");
+
+                c.BaseAddress = new Uri(url);
+                c.Timeout = TimeSpan.FromSeconds(100);
+
+                // ถ้ามี user/pass → ใส่ Basic Auth
+                if (!string.IsNullOrEmpty(user) && !string.IsNullOrEmpty(pass))
+                {
+                    var token = Convert.ToBase64String(
+                        Encoding.UTF8.GetBytes($"{user}:{pass}")
+                    );
+
+                    c.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Basic", token);
+                }
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+
+                return handler;
+            });
+
+            builder.Services.AddHealthChecks();
 
             builder.Services.AddAuthentication("BasicOrBearer")
                 .AddScheme<AuthenticationSchemeOptions, AuthenticationHandlerProxy>("BasicOrBearer", null);

@@ -23,8 +23,8 @@ namespace Its.PleaseProtect.Api.Controllers
         [Route("org/{id}/action/GetEsConfig")]
         public IActionResult GetEsConfig(string id)
         {
-            var result = svc.GetEsConfig(id);
-            return Ok(result);
+            //var result = svc.GetEsConfig(id);
+            return Ok(null);
         }
     }
 }

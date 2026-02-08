@@ -12,7 +12,7 @@ $stdout.sync = true
 ################### Main #######################
 load_env("./.env")
 
-url = "https://abc.com/user-signup-confirm/e69498ff-5cd5-4c43-a01f-a06c71a8e33b?data=eyJFbWFpbCI6InBqYW1lLmZiMkBnbWFpbC5jb20iLCJVc2VyTmFtZSI6InNldWJwb25nLm1vbjIiLCJQYXNzd29yZCI6bnVsbCwiTmFtZSI6bnVsbCwiTGFzdG5hbWUiOm51bGwsIkludml0ZWRCeSI6ImFwaSIsIk9yZ1VzZXJJZCI6IjZiMjkzNDcwLTQxMWEtNGZmYS1hNDA0LTBmODk5ZGZkMDA5MCJ9"
+url = "https://abc.com/user-invite-confirm/default/103d460d-89c7-4948-9281-be9f3ee80b37?data=eyJFbWFpbCI6InBqYW1lLmZiMkBnbWFpbC5jb20iLCJVc2VyTmFtZSI6InNldWJwb25nLm1vbjIiLCJQYXNzd29yZCI6bnVsbCwiTmFtZSI6bnVsbCwiTGFzdG5hbWUiOm51bGwsIkludml0ZWRCeSI6ImFwaSIsIk9yZ1VzZXJJZCI6IjdjYjYzMjMwLWRlOGMtNDQxOS1hZDQ5LTViYjdlYzUxYjZmZCJ9"
 uri = URI.parse(url)
 
 # แปลง query string เป็น hash
@@ -25,9 +25,9 @@ parts = path.split('/').reject(&:empty?)
 decoded = Base64.decode64(data)
 dataObj = JSON.parse(decoded)
 
-orgId = 'default'
 regType = parts[0]
-token = parts[1]
+orgId = parts[1]
+token = parts[2]
 
 api = "ConfirmNewUserInvitation"
 if (regType != 'user-signup-confirm')
