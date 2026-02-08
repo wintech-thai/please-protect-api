@@ -109,6 +109,15 @@ namespace Its.PleaseProtect.Api
                     c.DefaultRequestHeaders.Authorization =
                         new AuthenticationHeaderValue("Basic", token);
                 }
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+
+                return handler;
             });
 
             builder.Services.AddHealthChecks();
