@@ -16,12 +16,9 @@ keyword = ''
 apiUrl = "api/Es/org/#{orgId}/action/Proxy/pp-*/_search"
 param = {
   query: {
-    multi_match: {
-      query: keyword,
-      fields: ["message", "title", "description"]
-    }
+    match_all: {}
   },
-  size: 20
+  size: 5
 }
 
 result = make_request(:post, apiUrl, param)
