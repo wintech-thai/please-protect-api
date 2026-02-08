@@ -86,7 +86,7 @@ namespace Its.PleaseProtect.Api.Services
             var registerDomain = "<REGISTER_SERVICE_DOMAIN>"; //คนที่เรียกใช้งานจะต้องเปลี่ยนเป็น domain ของ register service เอง
 
             var token = Guid.NewGuid().ToString();
-            var registrationUrl = $"https://{registerDomain}/{regType}/{token}?data={dataUrlSafe}";
+            var registrationUrl = $"https://{registerDomain}/{regType}/{orgId}/{token}?data={dataUrlSafe}";
 
             var templateType = "user-invitation-to-org";
             var job = new MJob()
