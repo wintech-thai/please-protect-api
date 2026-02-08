@@ -83,15 +83,10 @@ namespace Its.PleaseProtect.Api.Services
 
             var dataUrlSafe = HttpUtility.UrlEncode(jsonStringB64);
 
-            var registerDomain = "register";
-            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Local";
-            if (environment != "Production")
-            {
-                registerDomain = "register-dev";
-            }
+            var registerDomain = "<REGISTER_SERVICE_DOMAIN>"; //คนที่เรียกใช้งานจะต้องเปลี่ยนเป็น domain ของ register service เอง
 
             var token = Guid.NewGuid().ToString();
-            var registrationUrl = $"https://{registerDomain}.otep.triple-t.co/{orgId}/{regType}/{token}?data={dataUrlSafe}";
+            var registrationUrl = $"https://{registerDomain}/{orgId}/{regType}/{token}?data={dataUrlSafe}";
 
             var templateType = "user-invitation-to-org";
             var job = new MJob()

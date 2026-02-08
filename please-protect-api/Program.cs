@@ -12,6 +12,7 @@ using Its.PleaseProtect.Api.Authorizations;
 using Its.PleaseProtect.Api.Authentications;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
+using Its.PleaseProtect.Api.AuditLogs;
 
 namespace Its.PleaseProtect.Api
 {
@@ -76,6 +77,7 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<ICustomRoleService, CustomRoleService>();
             builder.Services.AddScoped<ISubnetService, SubnetService>();
             builder.Services.AddScoped<IObjectStorageService, MinioObjectStorageService>();
+            builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
 
 
             builder.Services.AddTransient<IAuthorizationHandler, GenericRbacHandler>();
@@ -122,6 +124,7 @@ namespace Its.PleaseProtect.Api
                 app.UseSwaggerUI();
             }
 
+            app.UseMiddleware<AuditLogMiddleware>();
             app.MapHealthChecks("/health");
             app.UseHttpsRedirection();
             app.UseAuthentication();
