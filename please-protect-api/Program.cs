@@ -131,6 +131,17 @@ namespace Its.PleaseProtect.Api
                 c.Timeout = TimeSpan.FromSeconds(60);
             });
 
+            builder.Services.AddHttpClient("loki-proxy", c =>
+            {
+                var url = Environment.GetEnvironmentVariable("LOKI_URL");
+
+                if (string.IsNullOrWhiteSpace(url))
+                    throw new Exception("LOKI_URL is not set");
+
+                c.BaseAddress = new Uri(url);
+                c.Timeout = TimeSpan.FromSeconds(60);
+            });
+
             builder.Services.AddHealthChecks();
 
             builder.Services.AddAuthentication("BasicOrBearer")

@@ -11,12 +11,68 @@ namespace Its.PleaseProtect.Api.Controllers
     {
         private readonly HttpClient _esClient;
         private readonly HttpClient _promClient;
+        private readonly HttpClient _lokiClient;
 
         [ExcludeFromCodeCoverage]
         public ProxyController(IHttpClientFactory factory)
         {
             _esClient = factory.CreateClient("es-proxy");
             _promClient = factory.CreateClient("prom-proxy");
+            _lokiClient = factory.CreateClient("loki-proxy");
+        }
+
+        [AcceptVerbs("GET","POST")]
+        [Route("org/{id}/action/Loki/{**path}")]
+        public async Task Loki(string id, string path, CancellationToken ct)
+        {
+            var blockedPrefixes = new[]
+            {
+                "api/v1/push",      // ingest logs
+                "api/prom/push",
+                "api/v1/delete"
+            };
+
+            if (blockedPrefixes.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+            {
+                Response.StatusCode = 403;
+                await Response.WriteAsync("Write API not allowed");
+                return;
+            }
+
+            var targetUri = $"{path}{Request.QueryString}";
+
+            using var requestMessage = new HttpRequestMessage(
+                new HttpMethod(Request.Method),
+                targetUri
+            );
+
+            // copy headers (block Authorization)
+            foreach (var header in Request.Headers)
+            {
+                if (header.Key.Equals("Host", StringComparison.OrdinalIgnoreCase) ||
+                    header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                requestMessage.Headers.TryAddWithoutValidation(
+                    header.Key, header.Value.ToArray());
+            }
+
+            using var responseMessage = await _lokiClient.SendAsync(
+                requestMessage,
+                HttpCompletionOption.ResponseHeadersRead,
+                ct);
+
+            Response.StatusCode = (int)responseMessage.StatusCode;
+
+            foreach (var h in responseMessage.Headers)
+                Response.Headers[h.Key] = h.Value.ToArray();
+
+            foreach (var h in responseMessage.Content.Headers)
+                Response.Headers[h.Key] = h.Value.ToArray();
+
+            Response.Headers.Remove("transfer-encoding");
+
+            await responseMessage.Content.CopyToAsync(Response.Body);
         }
 
         [AcceptVerbs("GET","POST")]
