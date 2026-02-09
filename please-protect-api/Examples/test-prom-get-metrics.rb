@@ -16,7 +16,7 @@ keyword = ''
 apiUrl = "api/Proxy/org/#{orgId}/action/Prometheus/api/v1/query?query=up"
 param = nil
 
-result = make_request(:post, apiUrl, param)
+result = make_request(:get, apiUrl, param)
 
 json = result.to_json
 puts(json)

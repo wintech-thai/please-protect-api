@@ -74,6 +74,8 @@ namespace Its.PleaseProtect.Api.Controllers
             foreach (var h in responseMessage.Content.Headers)
                 Response.Headers[h.Key] = h.Value.ToArray();
 
+            Response.Headers.Remove("transfer-encoding");
+
             await responseMessage.Content.CopyToAsync(Response.Body);
         }
         
