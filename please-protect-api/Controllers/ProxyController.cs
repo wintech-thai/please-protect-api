@@ -7,20 +7,20 @@ namespace Its.PleaseProtect.Api.Controllers
     [Authorize(Policy = "GenericRolePolicy")]
     [ApiController]
     [Route("/api/[controller]")]
-    public class EsController : ControllerBase
+    public class ProxyController : ControllerBase
     {
-        private readonly HttpClient _client;
+        private readonly HttpClient _esClient;
 
         [ExcludeFromCodeCoverage]
-        public EsController(IHttpClientFactory factory)
+        public ProxyController(IHttpClientFactory factory)
         {
-            _client = factory.CreateClient("es-proxy");
+            _esClient = factory.CreateClient("es-proxy");
         }
 
         [ExcludeFromCodeCoverage]
         [AcceptVerbs("GET","POST","PUT","DELETE","PATCH","HEAD")]
-        [Route("org/{id}/action/Proxy/{**path}")]
-        public async Task Proxy(string id, string path, CancellationToken ct)
+        [Route("org/{id}/action/ElasticSearch/{**path}")]
+        public async Task ElasticSearch(string id, string path, CancellationToken ct)
         {
             // -------------------------
             // Security: allow list only
@@ -74,7 +74,7 @@ namespace Its.PleaseProtect.Api.Controllers
             // -------------------------
             // send to ES (stream mode)
             // -------------------------
-            using var responseMessage = await _client.SendAsync(
+            using var responseMessage = await _esClient.SendAsync(
                 requestMessage,
                 HttpCompletionOption.ResponseHeadersRead,
                 ct

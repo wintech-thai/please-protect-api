@@ -13,7 +13,7 @@ load_env("./.env")
 orgId = ENV['API_ORG']
 keyword = ''
 
-apiUrl = "api/Es/org/#{orgId}/action/Proxy/pp-*/_search"
+apiUrl = "api/Proxy/org/#{orgId}/action/ElasticSearch/pp-*/_search"
 param = {
   query: {
     match_all: {}
