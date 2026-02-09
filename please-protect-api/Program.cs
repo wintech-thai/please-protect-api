@@ -120,6 +120,17 @@ namespace Its.PleaseProtect.Api
                 return handler;
             });
 
+            builder.Services.AddHttpClient("prom-proxy", c =>
+            {
+                var url = Environment.GetEnvironmentVariable("PROM_URL");
+
+                if (string.IsNullOrWhiteSpace(url))
+                    throw new Exception("PROM_URL is not set");
+
+                c.BaseAddress = new Uri(url);
+                c.Timeout = TimeSpan.FromSeconds(60);
+            });
+
             builder.Services.AddHealthChecks();
 
             builder.Services.AddAuthentication("BasicOrBearer")

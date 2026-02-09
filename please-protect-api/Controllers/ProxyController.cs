@@ -10,13 +10,73 @@ namespace Its.PleaseProtect.Api.Controllers
     public class ProxyController : ControllerBase
     {
         private readonly HttpClient _esClient;
+        private readonly HttpClient _promClient;
 
         [ExcludeFromCodeCoverage]
         public ProxyController(IHttpClientFactory factory)
         {
             _esClient = factory.CreateClient("es-proxy");
+            _promClient = factory.CreateClient("prom-proxy");
         }
 
+        [AcceptVerbs("GET","POST")]
+        [Route("org/{id}/action/Prometheus/{**path}")]
+        public async Task Prometheus(string id, string path, CancellationToken ct)
+        {
+            // -------------------------
+            // Allow เฉพาะ API ที่ปลอดภัย
+            // -------------------------
+            var allowedPrefixes = new[]
+            {
+                "api/v1/query",
+                "api/v1/query_range",
+                "api/v1/series",
+                "api/v1/labels",
+                "api/v1/label"
+            };
+
+            if (!allowedPrefixes.Any(p =>
+                path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+            {
+                Response.StatusCode = 403;
+                await Response.WriteAsync("API not allowed");
+                return;
+            }
+
+            var targetUri = $"{path}{Request.QueryString}";
+
+            using var requestMessage = new HttpRequestMessage(
+                new HttpMethod(Request.Method),
+                targetUri
+            );
+
+            // copy headers (block Authorization)
+            foreach (var header in Request.Headers)
+            {
+                if (header.Key.Equals("Host", StringComparison.OrdinalIgnoreCase) ||
+                    header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                requestMessage.Headers.TryAddWithoutValidation(
+                    header.Key, header.Value.ToArray());
+            }
+
+            using var responseMessage = await _promClient.SendAsync(
+                requestMessage,
+                HttpCompletionOption.ResponseHeadersRead,
+                ct);
+
+            Response.StatusCode = (int)responseMessage.StatusCode;
+
+            foreach (var h in responseMessage.Headers)
+                Response.Headers[h.Key] = h.Value.ToArray();
+
+            foreach (var h in responseMessage.Content.Headers)
+                Response.Headers[h.Key] = h.Value.ToArray();
+
+            await responseMessage.Content.CopyToAsync(Response.Body);
+        }
+        
         [ExcludeFromCodeCoverage]
         [AcceptVerbs("GET","POST","PUT","DELETE","PATCH","HEAD")]
         [Route("org/{id}/action/ElasticSearch/{**path}")]
