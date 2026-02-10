@@ -87,6 +87,7 @@ namespace Its.PleaseProtect.Api.Database.Repositories
                 Detail = x.alert.Detail,
                 RawData = x.alert.RawData,
                 Severity = x.alert.Severity,
+                Status = x.alert.Status,
                 CreatedDate = x.alert.CreatedDate,
             });
         }
@@ -104,6 +105,7 @@ namespace Its.PleaseProtect.Api.Database.Repositories
                 fullTextPd = fullTextPd.Or(p => p.Summary!.Contains(param.FullTextSearch));
                 fullTextPd = fullTextPd.Or(p => p.Detail!.Contains(param.FullTextSearch));
                 fullTextPd = fullTextPd.Or(p => p.Severity!.Contains(param.FullTextSearch));
+                fullTextPd = fullTextPd.Or(p => p.Status!.Contains(param.FullTextSearch));
 
                 pd = pd.And(fullTextPd);
             }

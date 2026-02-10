@@ -27,6 +27,9 @@ namespace Its.PleaseProtect.Api.Models
         [Column("summary")]
         public string? Summary { get; set; }
 
+        [Column("status")]
+        public string? Status { get; set; } /* Firing, Resolved */
+
         [Column("detail")]
         public string? Detail { get; set; }
 

@@ -20,5 +20,6 @@ namespace Its.PleaseProtect.Api.Database
         public DbSet<MIoC>? Iocs { get; set; }
         public DbSet<MSubnet>? Subnets { get; set; }
         public DbSet<MNotiAlertEvent>? NotiAlertEvents { get; set; }
+        public DbSet<MNotiAlertChannel>? NotiAlertChannels { get; set; }
     }
 }
