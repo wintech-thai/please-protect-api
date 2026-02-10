@@ -19,5 +19,6 @@ namespace Its.PleaseProtect.Api.Database
         public DbSet<MJob>? Jobs { get; set; }
         public DbSet<MIoC>? Iocs { get; set; }
         public DbSet<MSubnet>? Subnets { get; set; }
+        public DbSet<MNotiAlertEvent>? NotiAlertEvents { get; set; }
     }
 }

@@ -65,6 +65,7 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<IIoCRepository, IoCRepository>();
             builder.Services.AddScoped<ISubnetRepository, SubnetRepository>();
             builder.Services.AddScoped<ICustomRoleRepository, CustomRoleRepository>();
+            builder.Services.AddScoped<IAlertEventRepository, AlertEventRepository>();
 
 
             builder.Services.AddScoped<IRoleService, RoleService>();
@@ -80,6 +81,7 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<ISubnetService, SubnetService>();
             builder.Services.AddScoped<IObjectStorageService, MinioObjectStorageService>();
             builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
+            builder.Services.AddScoped<IAlertEventService, AlertEventService>();
 
 
             builder.Services.AddTransient<IAuthorizationHandler, GenericRbacHandler>();

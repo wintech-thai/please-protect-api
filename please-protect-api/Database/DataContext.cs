@@ -25,6 +25,7 @@ public class DataContext : DbContext, IDataContext
     public DbSet<MJob>? Jobs { get; set; }
     public DbSet<MIoC>? Iocs { get; set; }
     public DbSet<MSubnet>? Subnets { get; set; }
+    public DbSet<MNotiAlertEvent>? NotiAlertEvents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -67,5 +68,7 @@ public class DataContext : DbContext, IDataContext
             .HasIndex(t => new { t.OrgId, t.Name }).IsUnique();
 
         modelBuilder.Entity<MJob>();
+
+        modelBuilder.Entity<MNotiAlertEvent>();
     }
 }
