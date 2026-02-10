@@ -18,6 +18,10 @@ param = {
 }
 
 result = make_request(:post, apiUrl, param)
+json = result.to_json
+puts(json)
 
+apiUrl = "api/AlertEvent/org/#{orgId}/action/GetAlertEventCount"
+result = make_request(:post, apiUrl, param)
 json = result.to_json
 puts(json)
