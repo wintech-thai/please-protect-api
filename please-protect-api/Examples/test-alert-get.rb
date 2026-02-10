@@ -11,17 +11,17 @@ $stdout.sync = true
 load_env("./.env")
 
 orgId = ENV['API_ORG']
-keyword = ''
 
-apiUrl = "api/Proxy/org/#{orgId}/action/ElasticSearch/pp-*/_search"
+apiUrl = "api/AlertEvent/org/#{orgId}/action/GetAlertEvents"
 param = {
-  query: {
-    match_all: {}
-  },
-  size: 5
+  FullTextSearch: "",
 }
 
 result = make_request(:post, apiUrl, param)
+json = result.to_json
+puts(json)
 
+apiUrl = "api/AlertEvent/org/#{orgId}/action/GetAlertEventCount"
+result = make_request(:post, apiUrl, param)
 json = result.to_json
 puts(json)

@@ -198,6 +198,7 @@ namespace Its.PleaseProtect.Api.Database.Repositories
                 var fullTextPd = PredicateBuilder.New<MOrganizationUser>();
                 fullTextPd = fullTextPd.Or(p => p.UserEmail!.Contains(param.FullTextSearch));
                 fullTextPd = fullTextPd.Or(p => p.UserName!.Contains(param.FullTextSearch));
+                fullTextPd = fullTextPd.Or(p => p.Tags!.Contains(param.FullTextSearch));
 
                 pd = pd.And(fullTextPd);
             }
