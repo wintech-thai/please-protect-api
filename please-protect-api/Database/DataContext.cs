@@ -26,6 +26,7 @@ public class DataContext : DbContext, IDataContext
     public DbSet<MIoC>? Iocs { get; set; }
     public DbSet<MSubnet>? Subnets { get; set; }
     public DbSet<MNotiAlertEvent>? NotiAlertEvents { get; set; }
+    public DbSet<MNotiAlertChannel>? NotiAlertChannels { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,5 +71,8 @@ public class DataContext : DbContext, IDataContext
         modelBuilder.Entity<MJob>();
 
         modelBuilder.Entity<MNotiAlertEvent>();
+
+        modelBuilder.Entity<MNotiAlertChannel>()
+            .HasIndex(t => new { t.OrgId, t.ChannelName }).IsUnique();
     }
 }
