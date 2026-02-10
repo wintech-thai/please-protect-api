@@ -14,6 +14,8 @@ namespace Its.PleaseProtect.Api.Database.Repositories
 
         public async Task<MNotiAlertEvent> AddAlertEvent(MNotiAlertEvent alertEvent)
         {
+            alertEvent.OrgId = orgId;
+            
             alertEvent.Id = Guid.NewGuid();
             alertEvent.CreatedDate = DateTime.UtcNow;
 
