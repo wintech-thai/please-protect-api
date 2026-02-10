@@ -16,32 +16,38 @@ public class DiscordNotifier
 
     public async Task SendAsync(AlertmanagerWebhook data)
     {
-        var color = data.Status == "firing"
+        var colorValue = data.Status == "firing"
             ? 16711680   // 🔴 red
             : 65280;     // 🟢 green
 
-        var embeds = data.Alerts.Select(alert =>
+        var embedsData = data.Alerts.Select(alert =>
         {
             alert.Labels.TryGetValue("alertname", out var name);
             alert.Annotations.TryGetValue("summary", out var summary);
             alert.Labels.TryGetValue("instance", out var instance);
+
+            var labelsText = string.Join("\n",
+                alert.Labels.Select(l => $"**{l.Key}:** {l.Value}")
+            );
 
             return new
             {
                 title = name ?? "Alert",
                 description =
                     $"**Summary:** {summary}\n" +
-                    $"**Instance:** {instance}\n" +
+                    labelsText + "\n" +
                     $"**Started:** {alert.StartsAt:yyyy-MM-dd HH:mm:ss}",
-                color = color
+                color = colorValue
             };
         }).Take(10); // Discord limit 10 embeds
 
+        var summary = data.Alerts != null && data.Alerts.Count > 0 && data.Alerts[0].Annotations.ContainsKey("summary") ? data.Alerts[0].Annotations["summary"] : "No Summary";
+        
         var payload = new
         {
             username = "AlertManager",
-            content = $"🚨 **{data.Status.ToUpper()}** ({data.Alerts.Count} alerts)",
-            embeds = embeds
+            content = $"🚨 **[{data.Status.ToUpper()}:{data.Alerts!.Count}]** {summary}",
+            embeds = embedsData
         };
 
         var json = JsonSerializer.Serialize(payload);
