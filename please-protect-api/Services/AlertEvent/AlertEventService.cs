@@ -4,6 +4,7 @@ using Its.PleaseProtect.Api.ViewsModels;
 using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
 using System.Text.Json;
+using FluentValidation;
 
 namespace Its.PleaseProtect.Api.Services
 {
@@ -26,12 +27,27 @@ namespace Its.PleaseProtect.Api.Services
                 Description = "Success"
             };
 
+            var firstAlert = alertEvent?.Alerts?.FirstOrDefault();
+            if (firstAlert == null)
+            {
+                r.Status = "NO_ALERT";
+                r.Description = "No alert found in the request";
+
+                return r;
+            }
+
+            var alertName = firstAlert.Labels != null && firstAlert.Labels.ContainsKey("alertname") ? firstAlert.Labels["alertname"] : "Unnamed Alert";
+            var summary = firstAlert.Annotations != null && firstAlert.Annotations.ContainsKey("summary") ? firstAlert.Annotations["summary"] : "No Summary";
+            var detail = firstAlert.Annotations != null && firstAlert.Annotations.ContainsKey("description") ? firstAlert.Annotations["description"] : "No Detail"; 
+            var severity = firstAlert.Labels != null && firstAlert.Labels.ContainsKey("severity") ? firstAlert.Labels["severity"] : "unknown";
+
             var evt = new MNotiAlertEvent()
             {
-                Name = "This is name",
-                Summary = "This is summary",
-                Detail = "This is detail",
+                Name = alertName,
+                Summary = summary,
+                Detail = detail,
                 RawData = JsonSerializer.Serialize(alertEvent),
+                Severity = severity,
             };
 
             var result = await repository.AddAlertEvent(evt);
