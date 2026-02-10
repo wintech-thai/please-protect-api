@@ -6,5 +6,6 @@ namespace Its.PleaseProtect.Api.ViewsModels
     public class VMNotiAlertChannel : VMQueryBase
     {
         public string? FullTextSearch { get; set; }
+        public string? Status { get; set; }
     }
 }
