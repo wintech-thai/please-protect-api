@@ -52,7 +52,8 @@ namespace Its.PleaseProtect.Api.Database.Repositories
 
             foreach (var r in result)
             {
-                r.DiscordWebhookUrl = "";
+                //ไม่ต้อง masking เพราะว่าต้องเอาไปใช้ตอนวนลูปส่งต่อ
+                //r.DiscordWebhookUrl = "";
             }
 
             return result;

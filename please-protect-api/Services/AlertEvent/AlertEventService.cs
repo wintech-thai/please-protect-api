@@ -10,10 +10,12 @@ namespace Its.PleaseProtect.Api.Services
     public class AlertEventService : BaseService, IAlertEventService
     {
         private readonly IAlertEventRepository? repository = null;
+        private readonly IAlertChannelService _alertChannelSvc;
 
-        public AlertEventService(IAlertEventRepository repo) : base()
+        public AlertEventService(IAlertEventRepository repo, IAlertChannelService alertChannelService) : base()
         {
             repository = repo;
+            _alertChannelSvc = alertChannelService;
         }
 
         public async Task<MVNotiAlertEvent> Notify(string orgId, AlertmanagerWebhook alertEvent)
@@ -52,6 +54,23 @@ namespace Its.PleaseProtect.Api.Services
             };
 
             var result = await repository.AddAlertEvent(evt);
+
+            var vm = new VMNotiAlertChannel()
+            {
+                Status = "Enabled"
+            }; 
+            
+            var channels = await _alertChannelSvc.GetAlertChannels(orgId, vm);
+            foreach (var channel in channels)
+            {
+                var channelType = channel.Type!.ToLower();
+                if (channelType == "discord")
+                {
+                    var url = channel.DiscordWebhookUrl!;
+                    var discordNotifier = new DiscordNotifier(new HttpClient(), url);
+                    await discordNotifier.SendAsync(alertEvent!);
+                }
+            }
 
             r.NotiAlertEvent = result;
             return r;

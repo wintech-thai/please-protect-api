@@ -14,17 +14,20 @@ namespace Its.PleaseProtect.Api.Services
         private readonly IOrganizationUserRepository? repository = null;
         private readonly IUserRepository? userRepository = null;
         private readonly IJobService _jobService;
-        private readonly IRedisHelper _redis;
+            private readonly IRedisHelper _redis;
+        private readonly IAuthService _authService;
 
         public OrganizationUserService(
             IOrganizationUserRepository repo,
             IUserRepository userRepo,
             IJobService jobService,
+            IAuthService authService,
             IRedisHelper redis) : base()
         {
             repository = repo;
             userRepository = userRepo;
             _jobService = jobService;
+            _authService = authService;
             _redis = redis;
         }
 
@@ -236,6 +239,7 @@ namespace Its.PleaseProtect.Api.Services
         public MVOrganizationUser? DeleteUserById(string orgId, string userId)
         {
             repository!.SetCustomOrgId(orgId);
+            userRepository!.SetCustomOrgId(orgId);
 
             var r = new MVOrganizationUser()
             {
@@ -274,6 +278,33 @@ namespace Its.PleaseProtect.Api.Services
             {
                 r.Status = "NOTFOUND_DELTE_USER";
                 r.Description = $"User ID [{userId}] not found for the organization [{orgId}]";
+                return r;
+            }
+
+            if (m.UserId == null)
+            {
+                //ไม่มี userId ใน table Users อยู่แล้ว, เป็น Pending อยู่ก็ไม่ต้องทำอะไรต่อ ถือว่าเป็น case ปกติ
+                return r;
+            }
+
+            //เนื่องจากเรามี org เดียวดังนั้นต้องลบ user ออกจาก table Users ด้วย 
+//Console.WriteLine($"DEBUG1 - Delete user with ID=[{m.UserId!.ToString()}]");
+            var deletedUser = userRepository!.DeleteUserById(m.UserId!.ToString());
+            if (deletedUser != null)
+            {
+                //ต้องลบ user ออกจาก IDP ด้วย
+                //ถ้ามีใน table Users แสดงว่า ต้องมีใน IDP แน่นอน
+                var idpUser = new MUser()
+                {
+                    //m จะมีค่า user object ออกมาเลย
+                    UserName = m.UserName,
+                };
+//Console.WriteLine($"DEBUG2 - Delete user in IDP with UserName=[{m.UserName}]"); 
+                _authService.DeleteUserIdp(idpUser).Wait();
+            }
+            else
+            {
+//Console.WriteLine($"DEBUG3 - Skip delete user in IDP as user with ID=[{m.UserId!.ToString()}] not found in Users table");                
             }
 
             return r;
