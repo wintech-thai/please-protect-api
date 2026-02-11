@@ -293,12 +293,12 @@ Console.WriteLine($"DEBUG1 - Delete user with ID=[{m.UserId!.ToString()}]");
                     //m จะมีค่า user object ออกมาเลย
                     UserName = m.UserName,
                 };
-
+Console.WriteLine($"DEBUG2 - Delete user in IDP with UserName=[{m.UserName}]"); 
                 _authService.DeleteUserIdp(idpUser).Wait();
             }
             else
             {
-Console.WriteLine($"DEBUG2 - Skip delete user in IDP as user with ID=[{m.UserId!.ToString()}] not found in Users table");                
+Console.WriteLine($"DEBUG3 - Skip delete user in IDP as user with ID=[{m.UserId!.ToString()}] not found in Users table");                
             }
 
             return r;

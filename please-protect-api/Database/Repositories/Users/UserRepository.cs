@@ -81,7 +81,9 @@ namespace Its.PleaseProtect.Api.Database.Repositories
 
         public MUser DeleteUserById(string userId)
         {
-            var u = context!.Users!.Where(p => p!.UserId!.Equals(userId)).FirstOrDefault();
+            Guid id = Guid.Parse(userId);
+
+            var u = context!.Users!.Where(p => p!.UserId!.Equals(id)).FirstOrDefault();
             if (u != null)
             {
                 context!.Users!.Remove(u);
