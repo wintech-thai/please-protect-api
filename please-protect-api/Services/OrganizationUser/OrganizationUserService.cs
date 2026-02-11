@@ -282,7 +282,8 @@ namespace Its.PleaseProtect.Api.Services
             }
 
             //เนื่องจากเรามี org เดียวดังนั้นต้องลบ user ออกจาก table Users ด้วย 
-            var deletedUser = userRepository!.DeleteUserById(u.Result.UserId!);
+Console.WriteLine($"DEBUG1 - Delete user with ID=[{m.UserId!.ToString()}]");
+            var deletedUser = userRepository!.DeleteUserById(m.UserId!.ToString());
             if (deletedUser != null)
             {
                 //ต้องลบ user ออกจาก IDP ด้วย
@@ -294,6 +295,10 @@ namespace Its.PleaseProtect.Api.Services
                 };
 
                 _authService.DeleteUserIdp(idpUser).Wait();
+            }
+            else
+            {
+Console.WriteLine($"DEBUG2 - Skip delete user in IDP as user with ID=[{m.UserId!.ToString()}] not found in Users table");                
             }
 
             return r;
