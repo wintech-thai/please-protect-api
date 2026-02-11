@@ -12,7 +12,7 @@ $stdout.sync = true
 ################### Main #######################
 load_env("./.env")
 
-url = "https://abc.com/user-invite-confirm/default/103d460d-89c7-4948-9281-be9f3ee80b37?data=eyJFbWFpbCI6InBqYW1lLmZiMkBnbWFpbC5jb20iLCJVc2VyTmFtZSI6InNldWJwb25nLm1vbjIiLCJQYXNzd29yZCI6bnVsbCwiTmFtZSI6bnVsbCwiTGFzdG5hbWUiOm51bGwsIkludml0ZWRCeSI6ImFwaSIsIk9yZ1VzZXJJZCI6IjdjYjYzMjMwLWRlOGMtNDQxOS1hZDQ5LTViYjdlYzUxYjZmZCJ9"
+url = "https://web-dev.rtarf-censor.dev-hubs.com/user-invite-confirm/default/6bae57ef-50b7-465d-841c-75f21a900d3e?data=eyJFbWFpbCI6InBqYW1lLmZiM0BnbWFpbC5jb20iLCJVc2VyTmFtZSI6InBqYW1lLnRlc3QzIiwiUGFzc3dvcmQiOm51bGwsIk5hbWUiOm51bGwsIkxhc3RuYW1lIjpudWxsLCJJbnZpdGVkQnkiOiJzZXVicG9uZy5tb24iLCJPcmdVc2VySWQiOiI3YWQxOGFlZC0wMmM2LTQ0NGUtYjY3NS05MDliZjk0Y2I5NmQifQ%3d%3d"
 uri = URI.parse(url)
 
 # แปลง query string เป็น hash

@@ -1,5 +1,6 @@
 
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -28,6 +29,7 @@ namespace Its.PleaseProtect.Api.Services
         private readonly string signedKeyUrl = "";
         private readonly string? clientId = "";
         private readonly string? clientSecret = "";
+        private readonly string deleteUserEndpoint = "";
         private IJwtSigner signer = new JwtSigner();
 
 
@@ -52,6 +54,7 @@ namespace Its.PleaseProtect.Api.Services
             updateUserEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users/<<user-id>>";
             logoutEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users/<<user-id>>/logout";
             getUserIdEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users?username=<<user-name>>";
+            deleteUserEndpoint = $"{urlPrefix}{authPath}/admin/realms/{realm}/users/<<user-id>>";
         }
 
         private string GetPreferredUsername(string accessToken)
@@ -225,6 +228,33 @@ namespace Its.PleaseProtect.Api.Services
             return result;
         }
 
+        private async Task<IdpResult> DeleteUserAsync(string token, string userId)
+        {
+            var ep = deleteUserEndpoint.Replace("<<user-id>>", userId);
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await client.DeleteAsync(ep);
+
+            var result = new IdpResult();
+
+            if (response.StatusCode == HttpStatusCode.NoContent)
+            {
+                result.Success = true;
+                result.Message = $"User [{userId}] deleted successfully.";
+                return result;
+            }
+
+            // error case
+            var errMsg = await response.Content.ReadAsStringAsync();
+
+            result.Success = false;
+            result.Message = $"Unable to delete user. Status: {(int)response.StatusCode}, {errMsg}";
+
+            return result;
+        }
+
         private async Task<IdpResult> LogoutUserAsync(string token, string userId)
         {
             var ep = logoutEndpoint.Replace("<<user-id>>", userId);
@@ -350,6 +380,47 @@ namespace Its.PleaseProtect.Api.Services
         {
             var token = GetServiceAccountToken();
             return await CreateUserAsync(token.Token.AccessToken, orgUser);
+        }
+
+        public async Task<IdpResult> DeleteUserIdp(MUser user)
+        {
+            var r = new IdpResult()
+            {
+                Success = true,
+                Message = "",
+            };
+
+            //เอา admin access token
+            var form = new[]
+            {
+                new KeyValuePair<string,string>("grant_type", "client_credentials"),
+                new KeyValuePair<string,string>("client_id", clientId!),
+                new KeyValuePair<string,string>("client_secret", clientSecret!),
+            };
+            var userToken = GetToken(form);
+            if (userToken.Status != "Success")
+            {
+                r.Success = false;
+                r.Message = $"Unable to get access token for delete user [{userToken.Message}]";
+                return r;
+            }
+
+            // อ่านค่า UserId จาก UserName
+            var userIdResult = GetUserIdByUsernameAsync(user.UserName!, userToken.Token.AccessToken).Result;
+            if (!userIdResult.Success)
+            {
+                return userIdResult;
+            }
+
+            // ลบ user โดยใช้ UserId เป็น input
+            var userId = userIdResult.UserId;
+            var deleteResult = await DeleteUserAsync(userToken.Token.AccessToken, userId!);
+            if (!deleteResult.Success)
+            {
+                return deleteResult;
+            }
+
+            return deleteResult;
         }
 
         public async Task<IdpResult> UpdateUserIdp(MUser user)

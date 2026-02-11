@@ -79,6 +79,18 @@ namespace Its.PleaseProtect.Api.Database.Repositories
             return u!;
         }
 
+        public MUser DeleteUserById(string userId)
+        {
+            var u = context!.Users!.Where(p => p!.UserId!.Equals(userId)).FirstOrDefault();
+            if (u != null)
+            {
+                context!.Users!.Remove(u);
+                context!.SaveChanges();
+            }
+
+            return u!;
+        }
+
         public MUser GetUserByEmail(string email)
         {
             var u = context!.Users!.Where(p => p!.UserEmail!.Equals(email)).FirstOrDefault();

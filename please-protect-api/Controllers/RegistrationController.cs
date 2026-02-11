@@ -188,6 +188,8 @@ namespace Its.PleaseProtect.Api.Controllers
             {
                 UserEmail = request.Email,
                 UserName = request.UserName,
+                Name = request.Name,
+                LastName = request.Lastname,
             });
 
             if (mvUser.Status != "OK")
