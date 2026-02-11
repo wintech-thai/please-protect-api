@@ -281,6 +281,12 @@ namespace Its.PleaseProtect.Api.Services
                 return r;
             }
 
+            if (m.UserId == null)
+            {
+                //ไม่มี userId ใน table Users อยู่แล้ว, เป็น Pending อยู่ก็ไม่ต้องทำอะไรต่อ ถือว่าเป็น case ปกติ
+                return r;
+            }
+
             //เนื่องจากเรามี org เดียวดังนั้นต้องลบ user ออกจาก table Users ด้วย 
 Console.WriteLine($"DEBUG1 - Delete user with ID=[{m.UserId!.ToString()}]");
             var deletedUser = userRepository!.DeleteUserById(m.UserId!.ToString());
