@@ -1,0 +1,57 @@
+nodes:
+  - id: interface1
+    name: Network Interface
+    description: Interface
+    type: Interface # การ์ดแลน
+    tag: enp2s0
+    outputs:
+      - id: receiver1
+
+  - id: receiver1
+    name: Raw Data Receiver
+    description: Logstash beat receiver
+    type: Processor
+    tag: logstash-beat-receiver # เอาชื่อตรงนี้ไปใช้ในการ query พวก Prometheus
+    outputs:
+      - id: topic1
+
+  - id: topic1
+    name: Raw Data Topic
+    description: Kafka topic to receive raw data
+    type: Topic # แสดงรูปด้วย icon ที่มีลักษณะเป็น message queue
+    tag: received-topic-beat # เอาชื่อตรงนี้ไปใช้ในการ query พวก Prometheus
+    outputs:
+      - id: transformer1
+        consumer: for-transformer
+
+  - id: transformer1
+    name: Data Transformer
+    description: Data transformer
+    type: Processor
+    tag: logstash-transformer # เอาชื่อตรงนี้ไปใช้ในการ query พวก Prometheus
+    outputs:
+      - id: topic2
+
+  - id: topic2
+    name: Transformed Topic
+    description: Kafka topic to receive transformed data
+    type: Topic # แสดงรูปด้วย icon ที่มีลักษณะเป็น message queue
+    tag: transformed-topic-beat # เอาชื่อตรงนี้ไปใช้ในการ query พวก Prometheus
+    outputs: # อนาคตสามารถมี output ได้มากกว่า 1 ช่องทาง
+      - id: dispatcher1
+        consumer: for-dispatcher-es
+      #- id: forwarder1
+      #  consumer: for-forwarder-beat
+
+  - id: dispatcher1
+    name: Data Dispatcher
+    description: Dispatcher data to ES
+    type: Processor
+    tag: logstash-dispatcher-es # เอาชื่อตรงนี้ไปใช้ในการ query พวก Prometheus
+    outputs:
+      - id: datastore1
+
+  - id: datastore1
+    name: Data Storage
+    description: Elasticsearch data store
+    type: DataStore
