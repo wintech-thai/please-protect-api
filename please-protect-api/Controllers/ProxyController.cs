@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +15,50 @@ namespace Its.PleaseProtect.Api.Controllers
         private readonly HttpClient _lokiClient;
         private readonly HttpClient _kubeClient;
 
+        private static readonly Regex[] AllowedKubeApiRegex =
+        {
+            // -----------------------
+            // namespaces
+            // -----------------------
+            new(@"^api/v1/namespaces/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // -----------------------
+            // pods & events (all namespaces)
+            // -----------------------
+            new(@"^api/v1/pods/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            new(@"^api/v1/events/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // -----------------------
+            // pods & events (namespaced)
+            // -----------------------
+            new(@"^api/v1/namespaces/[^/]+/(pods|events)(/[^/]+)?/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // -----------------------
+            // workloads (apps/v1)
+            // all namespaces
+            // -----------------------
+            new(@"^apis/apps/v1/(deployments|statefulsets|daemonsets|replicasets)(/[^/]+)?/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // namespaced workloads
+            new(@"^apis/apps/v1/namespaces/[^/]+/(deployments|statefulsets|daemonsets|replicasets)(/[^/]+)?/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // -----------------------
+            // metrics
+            // -----------------------
+            new(@"^apis/metrics\.k8s\.io/v1beta1/pods/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            new(@"^apis/metrics\.k8s\.io/v1beta1/namespaces/[^/]+/pods/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        };
+
         [ExcludeFromCodeCoverage]
         public ProxyController(IHttpClientFactory factory)
         {
@@ -23,132 +68,19 @@ namespace Its.PleaseProtect.Api.Controllers
             _kubeClient = factory.CreateClient("kube-proxy");
         }
 
-        private static bool HasDangerousSubresource(string[] segments)
-        {
-            if (segments.Length < 7)
-                return false;
-
-            var dangerous = new[]
-            {
-                "exec",
-                "attach",
-                "portforward",
-                "proxy",
-                "log"
-            };
-
-            return dangerous.Contains(
-                segments.Last(),
-                StringComparer.OrdinalIgnoreCase);
-        }
-
         private static bool IsAllowedKubePath(string path)
         {
             path = path.Trim('/');
 
-            var segments = path.Split('/');
-
-            if (segments.Length < 3)
+            // block dangerous pod subresources
+            if (Regex.IsMatch(path,
+                @"pods/.+/(exec|attach|portforward|proxy|log)$",
+                RegexOptions.IgnoreCase))
+            {
                 return false;
-
-            // ------------------------
-            // core api (/api/v1/...)
-            // ------------------------
-            if (segments[0] == "api" &&
-                segments[1] == "v1")
-            {
-                // namespaced:
-                // api/v1/namespaces/{ns}/pods
-                if (segments.Length >= 5 &&
-                    segments[2] == "namespaces")
-                {
-                    var resource = segments[4];
-
-                    return resource switch
-                    {
-                        "pods" => !HasDangerousSubresource(segments),
-                        "events" => true,
-                        _ => false
-                    };
-                }
-
-                // all namespaces:
-                // api/v1/pods
-                if (segments.Length >= 3)
-                {
-                    var resource = segments[2];
-
-                    return resource switch
-                    {
-                        "pods" => true,
-                        "events" => true,
-                        _ => false
-                    };
-                }
             }
 
-            // ------------------------
-            // apps api
-            // ------------------------
-            if (segments[0] == "apis" &&
-                segments[1] == "apps" &&
-                segments[2] == "v1")
-            {
-                // namespaced:
-                // apis/apps/v1/namespaces/{ns}/deployments
-                if (segments.Length >= 7 &&
-                    segments[3] == "namespaces")
-                {
-                    var resource = segments[5];
-
-                    return resource switch
-                    {
-                        "deployments" => true,
-                        "statefulsets" => true,
-                        "daemonsets" => true,
-                        "replicasets" => true,
-                        _ => false
-                    };
-                }
-
-                // all namespaces:
-                // apis/apps/v1/deployments
-                if (segments.Length >= 4)
-                {
-                    var resource = segments[3];
-
-                    return resource switch
-                    {
-                        "deployments" => true,
-                        "statefulsets" => true,
-                        "daemonsets" => true,
-                        "replicasets" => true,
-                        _ => false
-                    };
-                }
-            }
-
-            // ------------------------
-            // metrics api
-            // ------------------------
-            if (segments[0] == "apis" &&
-                segments[1] == "metrics.k8s.io")
-            {
-                // namespaced
-                if (segments.Length >= 7 &&
-                    segments[3] == "namespaces")
-                {
-                    return segments[5] == "pods";
-                }
-
-                // all namespaces
-                if (segments.Length >= 4)
-                {
-                    return segments[3] == "pods";
-                }
-            }
-
-            return false;
+            return AllowedKubeApiRegex.Any(r => r.IsMatch(path));
         }
 
         [AcceptVerbs("GET")]
