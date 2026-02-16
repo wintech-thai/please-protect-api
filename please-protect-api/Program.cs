@@ -155,6 +155,15 @@ namespace Its.PleaseProtect.Api
 
                 c.BaseAddress = new Uri(url);
                 c.Timeout = TimeSpan.FromSeconds(60);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+
+                return handler;
             });
 
             builder.Services.AddHealthChecks();
