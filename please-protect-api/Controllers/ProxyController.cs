@@ -91,6 +91,7 @@ namespace Its.PleaseProtect.Api.Controllers
 
             if (!IsAllowedKubePath(path))
             {
+                Console.WriteLine($"DEBUG - API not allowed [{path}]");
                 Response.StatusCode = 403;
                 await Response.WriteAsync("API not allowed");
                 return;
