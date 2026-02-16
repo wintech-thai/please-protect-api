@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +13,51 @@ namespace Its.PleaseProtect.Api.Controllers
         private readonly HttpClient _esClient;
         private readonly HttpClient _promClient;
         private readonly HttpClient _lokiClient;
+        private readonly HttpClient _kubeClient;
+
+        private static readonly Regex[] AllowedKubeApiRegex =
+        {
+            // -----------------------
+            // namespaces
+            // -----------------------
+            new(@"^api/v1/namespaces/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // -----------------------
+            // pods & events (all namespaces)
+            // -----------------------
+            new(@"^api/v1/pods/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            new(@"^api/v1/events/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // -----------------------
+            // pods & events (namespaced)
+            // -----------------------
+            new(@"^api/v1/namespaces/[^/]+/(pods|events)(/[^/]+)?/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // -----------------------
+            // workloads (apps/v1)
+            // all namespaces
+            // -----------------------
+            new(@"^apis/apps/v1/(deployments|statefulsets|daemonsets|replicasets)(/[^/]+)?/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // namespaced workloads
+            new(@"^apis/apps/v1/namespaces/[^/]+/(deployments|statefulsets|daemonsets|replicasets)(/[^/]+)?/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // -----------------------
+            // metrics
+            // -----------------------
+            new(@"^apis/metrics\.k8s\.io/v1beta1/pods/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            new(@"^apis/metrics\.k8s\.io/v1beta1/namespaces/[^/]+/pods/?$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        };
 
         [ExcludeFromCodeCoverage]
         public ProxyController(IHttpClientFactory factory)
@@ -19,6 +65,83 @@ namespace Its.PleaseProtect.Api.Controllers
             _esClient = factory.CreateClient("es-proxy");
             _promClient = factory.CreateClient("prom-proxy");
             _lokiClient = factory.CreateClient("loki-proxy");
+            _kubeClient = factory.CreateClient("kube-proxy");
+        }
+
+        private static bool IsAllowedKubePath(string path)
+        {
+            path = path.Trim('/');
+
+            // block dangerous pod subresources
+            if (Regex.IsMatch(path,
+                @"pods/.+/(exec|attach|portforward|proxy|log)$",
+                RegexOptions.IgnoreCase))
+            {
+                return false;
+            }
+
+            return AllowedKubeApiRegex.Any(r => r.IsMatch(path));
+        }
+
+        [AcceptVerbs("GET")]
+        [Route("org/{id}/action/Kube/{**path}")]
+        public async Task Kube(string id, string path, CancellationToken ct)
+        {
+            path ??= "";
+
+            if (!IsAllowedKubePath(path))
+            {
+//Console.WriteLine($"DEBUG1 - API not allowed [{path}]");
+                Response.StatusCode = 403;
+                await Response.WriteAsync("API not allowed");
+                return;
+            }
+
+//Console.WriteLine($"DEBUG2 - API allowed [{path}]");
+            var targetUri = $"{path}{Request.QueryString}";
+
+            using var requestMessage =
+                new HttpRequestMessage(HttpMethod.Get, targetUri);
+
+            foreach (var header in Request.Headers)
+            {
+                if (header.Key.Equals("Host", StringComparison.OrdinalIgnoreCase) ||
+                    header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                requestMessage.Headers.TryAddWithoutValidation(
+                    header.Key, header.Value.ToArray());
+            }
+
+            // -------------------------
+            // ADD K8S TOKEN
+            // -------------------------
+            var token = await System.IO.File.ReadAllTextAsync(
+                "/var/run/secrets/kubernetes.io/serviceaccount/token",
+                ct);
+
+            requestMessage.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "Bearer",
+                    token.Trim()
+                );
+
+            using var responseMessage = await _kubeClient.SendAsync(
+                requestMessage,
+                HttpCompletionOption.ResponseHeadersRead,
+                ct);
+
+            Response.StatusCode = (int)responseMessage.StatusCode;
+
+            foreach (var h in responseMessage.Headers)
+                Response.Headers[h.Key] = h.Value.ToArray();
+
+            foreach (var h in responseMessage.Content.Headers)
+                Response.Headers[h.Key] = h.Value.ToArray();
+
+            Response.Headers.Remove("transfer-encoding");
+
+            await responseMessage.Content.CopyToAsync(Response.Body);
         }
 
         [AcceptVerbs("GET","POST")]

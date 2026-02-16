@@ -146,6 +146,26 @@ namespace Its.PleaseProtect.Api
                 c.Timeout = TimeSpan.FromSeconds(60);
             });
 
+            builder.Services.AddHttpClient("kube-proxy", c =>
+            {
+                var url = Environment.GetEnvironmentVariable("KUBE_URL");
+
+                if (string.IsNullOrWhiteSpace(url))
+                    throw new Exception("KUBE_URL is not set");
+
+                c.BaseAddress = new Uri(url);
+                c.Timeout = TimeSpan.FromSeconds(60);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+
+                return handler;
+            });
+
             builder.Services.AddHealthChecks();
 
             builder.Services.AddAuthentication("BasicOrBearer")
