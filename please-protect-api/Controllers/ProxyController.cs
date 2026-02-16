@@ -91,13 +91,13 @@ namespace Its.PleaseProtect.Api.Controllers
 
             if (!IsAllowedKubePath(path))
             {
-                Console.WriteLine($"DEBUG1 - API not allowed [{path}]");
+//Console.WriteLine($"DEBUG1 - API not allowed [{path}]");
                 Response.StatusCode = 403;
                 await Response.WriteAsync("API not allowed");
                 return;
             }
 
-Console.WriteLine($"DEBUG2 - API allowed [{path}]");
+//Console.WriteLine($"DEBUG2 - API allowed [{path}]");
             var targetUri = $"{path}{Request.QueryString}";
 
             using var requestMessage =

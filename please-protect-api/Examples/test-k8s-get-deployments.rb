@@ -16,7 +16,8 @@ workload = 'pp-dev-pp-api'
 
 #apiUrl = "api/Proxy/org/#{orgId}/action/Kube/apis/apps/v1/deployments" #ดึงทุก deployment ใน cluster
 #apiUrl = "api/Proxy/org/#{orgId}/action/Kube/apis/apps/v1/namespaces/#{ns}/deployments/#{workload}" #ดึงข้อมูลเฉพาะ deployment นั้น ๆ
-apiUrl = "api/Proxy/org/#{orgId}/action/Kube/apis/apps/v1/namespaces" #ดึง namespaces ออกมาดู
+#apiUrl = "api/Proxy/org/#{orgId}/action/Kube/api/v1/namespaces" #ดึง namespaces ออกมาดู
+apiUrl = "api/Proxy/org/#{orgId}/action/Kube/api/v1/pods" #ดึง pods ออกมาดู
 
 param = nil
 
