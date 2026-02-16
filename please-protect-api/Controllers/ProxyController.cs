@@ -48,43 +48,84 @@ namespace Its.PleaseProtect.Api.Controllers
 
             var segments = path.Split('/');
 
-            // minimum check
-            if (segments.Length < 6)
+            if (segments.Length < 3)
                 return false;
 
             // ------------------------
             // core api (/api/v1/...)
             // ------------------------
             if (segments[0] == "api" &&
-                segments[1] == "v1" &&
-                segments[2] == "namespaces")
+                segments[1] == "v1")
             {
-                var resource = segments[4];
-
-                return resource switch
+                // namespaced:
+                // api/v1/namespaces/{ns}/pods
+                if (segments.Length >= 5 &&
+                    segments[2] == "namespaces")
                 {
-                    "pods" => !HasDangerousSubresource(segments),
-                    "events" => true,
-                    _ => false
-                };
+                    var resource = segments[4];
+
+                    return resource switch
+                    {
+                        "pods" => !HasDangerousSubresource(segments),
+                        "events" => true,
+                        _ => false
+                    };
+                }
+
+                // all namespaces:
+                // api/v1/pods
+                if (segments.Length >= 3)
+                {
+                    var resource = segments[2];
+
+                    return resource switch
+                    {
+                        "pods" => true,
+                        "events" => true,
+                        _ => false
+                    };
+                }
             }
 
             // ------------------------
             // apps api
             // ------------------------
             if (segments[0] == "apis" &&
-                segments[1] == "apps")
+                segments[1] == "apps" &&
+                segments[2] == "v1")
             {
-                var resource = segments[6];
-
-                return resource switch
+                // namespaced:
+                // apis/apps/v1/namespaces/{ns}/deployments
+                if (segments.Length >= 7 &&
+                    segments[3] == "namespaces")
                 {
-                    "deployments" => true,
-                    "statefulsets" => true,
-                    "daemonsets" => true,
-                    "replicasets" => true,
-                    _ => false
-                };
+                    var resource = segments[5];
+
+                    return resource switch
+                    {
+                        "deployments" => true,
+                        "statefulsets" => true,
+                        "daemonsets" => true,
+                        "replicasets" => true,
+                        _ => false
+                    };
+                }
+
+                // all namespaces:
+                // apis/apps/v1/deployments
+                if (segments.Length >= 4)
+                {
+                    var resource = segments[3];
+
+                    return resource switch
+                    {
+                        "deployments" => true,
+                        "statefulsets" => true,
+                        "daemonsets" => true,
+                        "replicasets" => true,
+                        _ => false
+                    };
+                }
             }
 
             // ------------------------
@@ -93,7 +134,18 @@ namespace Its.PleaseProtect.Api.Controllers
             if (segments[0] == "apis" &&
                 segments[1] == "metrics.k8s.io")
             {
-                return segments[6] == "pods";
+                // namespaced
+                if (segments.Length >= 7 &&
+                    segments[3] == "namespaces")
+                {
+                    return segments[5] == "pods";
+                }
+
+                // all namespaces
+                if (segments.Length >= 4)
+                {
+                    return segments[3] == "pods";
+                }
             }
 
             return false;
@@ -101,7 +153,7 @@ namespace Its.PleaseProtect.Api.Controllers
 
         [AcceptVerbs("GET")]
         [Route("org/{id}/action/Kube/{**path}")]
-        public async Task Kubernetes(string id, string path, CancellationToken ct)
+        public async Task Kube(string id, string path, CancellationToken ct)
         {
             path ??= "";
 
