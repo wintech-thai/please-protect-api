@@ -35,6 +35,7 @@ queryStr = URI.encode_www_form(
 # Proxy -> Arkime API
 # -------------------------
 apiUrl = "api/Proxy/org/#{orgId}/action/Arkime/api/sessions?#{queryStr}"
+apiUrl = "api/Proxy/org/#{orgId}/action/Arkime/api/fields"
 
 param = nil
 
