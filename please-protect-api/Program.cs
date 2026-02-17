@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Its.PleaseProtect.Api.AuditLogs;
 using System.Text;
 using System.Net.Http.Headers;
+using System.Net;
 
 namespace Its.PleaseProtect.Api
 {
@@ -145,6 +146,43 @@ namespace Its.PleaseProtect.Api
                 c.BaseAddress = new Uri(url);
                 c.Timeout = TimeSpan.FromSeconds(60);
             });
+
+            builder.Services.AddHttpClient("arkime-proxy")
+                .ConfigurePrimaryHttpMessageHandler(() =>
+                {
+                    var user = Environment.GetEnvironmentVariable("ARKIME_USER");
+                    var pass = Environment.GetEnvironmentVariable("ARKIME_PASSWORD");
+
+                    var handler = new HttpClientHandler();
+
+                    // Digest Auth (Arkime)
+                    if (!string.IsNullOrEmpty(user) &&
+                        !string.IsNullOrEmpty(pass))
+                    {
+                        handler.Credentials =
+                            new NetworkCredential(user, pass);
+
+                        // Digest ต้องให้ handler negotiate เอง
+                        handler.PreAuthenticate = false;
+                    }
+
+                    return handler;
+                })
+                .ConfigureHttpClient(c =>
+                {
+                    var url = Environment.GetEnvironmentVariable("ARKIME_URL");
+
+                    if (string.IsNullOrWhiteSpace(url))
+                        throw new Exception("ARKIME_URL is not set");
+
+                    c.BaseAddress = new Uri(url.TrimEnd('/') + "/");
+                    c.Timeout = TimeSpan.FromMinutes(2);
+
+                    // Arkime ชอบ header นี้
+                    c.DefaultRequestHeaders.Add(
+                        "X-Requested-With",
+                        "XMLHttpRequest");
+                });
 
             builder.Services.AddHttpClient("kube-proxy", c =>
             {

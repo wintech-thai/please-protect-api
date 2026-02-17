@@ -14,6 +14,7 @@ namespace Its.PleaseProtect.Api.Controllers
         private readonly HttpClient _promClient;
         private readonly HttpClient _lokiClient;
         private readonly HttpClient _kubeClient;
+        private readonly HttpClient _arkimeClient;
 
         private static readonly Regex[] AllowedKubeApiRegex =
         {
@@ -66,7 +67,110 @@ namespace Its.PleaseProtect.Api.Controllers
             _promClient = factory.CreateClient("prom-proxy");
             _lokiClient = factory.CreateClient("loki-proxy");
             _kubeClient = factory.CreateClient("kube-proxy");
+            _arkimeClient = factory.CreateClient("arkime-proxy");
         }
+
+        [ExcludeFromCodeCoverage]
+        [AcceptVerbs("GET", "POST")]
+        [Route("org/{id}/action/Arkime/{**path}")]
+        public async Task Arkime(string id, string path, CancellationToken ct)
+        {
+            // -------------------------
+            // Security: Arkime allow list
+            // -------------------------
+            var allowed = new[]
+            {
+                "api/sessions",
+                "api/session",
+                "api/spiview",
+                "api/connections",
+                "api/files",
+                "api/fields",
+                "api/stats"
+            };
+
+            if (!allowed.Any(a =>
+                path.StartsWith(a, StringComparison.OrdinalIgnoreCase)))
+            {
+//Console.WriteLine($"DEBUG1 - API not allowed [{path}]");
+                Response.StatusCode = StatusCodes.Status403Forbidden;
+                await Response.WriteAsync("API not allowed");
+                return;
+            }
+//Console.WriteLine($"DEBUG2 - API allowed [{path}]");
+            // -------------------------
+            // build target request
+            // -------------------------
+            var targetUri = $"/{path}{Request.QueryString}";
+
+            using var requestMessage = new HttpRequestMessage(
+                new HttpMethod(Request.Method),
+                targetUri
+            );
+
+            // copy body (streaming)
+            if (Request.ContentLength > 0)
+            {
+                requestMessage.Content = new StreamContent(Request.Body);
+            }
+
+            // -------------------------
+            // copy headers (safe)
+            // -------------------------
+            foreach (var header in Request.Headers)
+            {
+                // ไม่ copy header ที่ระบบจัดการเอง
+                if (header.Key.Equals("Host", StringComparison.OrdinalIgnoreCase) ||
+                    header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (!requestMessage.Headers.TryAddWithoutValidation(
+                        header.Key, header.Value.ToArray()))
+                {
+                    requestMessage.Content?.Headers.TryAddWithoutValidation(
+                        header.Key, header.Value.ToArray());
+                }
+            }
+
+            // Arkime required header
+            requestMessage.Headers.TryAddWithoutValidation(
+                "X-Requested-With", "XMLHttpRequest");
+
+            // -------------------------
+            // send to Arkime
+            // -------------------------
+            using var responseMessage = await _arkimeClient.SendAsync(
+                requestMessage,
+                HttpCompletionOption.ResponseHeadersRead,
+                ct
+            );
+
+            // -------------------------
+            // copy status code
+            // -------------------------
+            Response.StatusCode = (int)responseMessage.StatusCode;
+
+            // -------------------------
+            // copy headers back
+            // -------------------------
+            foreach (var header in responseMessage.Headers)
+                Response.Headers[header.Key] = header.Value.ToArray();
+
+            foreach (var header in responseMessage.Content.Headers)
+                Response.Headers[header.Key] = header.Value.ToArray();
+
+            Response.Headers.Remove("transfer-encoding");
+
+            Response.ContentType =
+                responseMessage.Content.Headers.ContentType?.ToString()
+                ?? "application/json";
+
+            // -------------------------
+            // stream body back
+            // -------------------------
+            await responseMessage.Content.CopyToAsync(Response.Body);
+        }
+
 
         private static bool IsAllowedKubePath(string path)
         {
@@ -257,7 +361,7 @@ namespace Its.PleaseProtect.Api.Controllers
 
             await responseMessage.Content.CopyToAsync(Response.Body);
         }
-        
+
         [ExcludeFromCodeCoverage]
         [AcceptVerbs("GET","POST","PUT","DELETE","PATCH","HEAD")]
         [Route("org/{id}/action/ElasticSearch/{**path}")]
