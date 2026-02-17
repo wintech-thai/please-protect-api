@@ -91,11 +91,12 @@ namespace Its.PleaseProtect.Api.Controllers
             if (!allowed.Any(a =>
                 path.StartsWith(a, StringComparison.OrdinalIgnoreCase)))
             {
+Console.WriteLine($"DEBUG1 - API not allowed [{path}]");
                 Response.StatusCode = StatusCodes.Status403Forbidden;
                 await Response.WriteAsync("API not allowed");
                 return;
             }
-
+Console.WriteLine($"DEBUG2 - API allowed [{path}]");
             // -------------------------
             // build target request
             // -------------------------
