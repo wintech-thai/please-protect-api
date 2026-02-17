@@ -17,14 +17,14 @@ orgId = ENV['API_ORG']
 # -------------------------
 
 # ตัวอย่าง filter (Arkime expression)
-expression = "protocol == ssh"
+expression = "protocols == ssh"
 
 # time range (ย้อนหลัง 1 ชั่วโมง)
 start_ts = (Time.now - 3600).to_i
 end_ts   = Time.now.to_i
 
 queryStr = URI.encode_www_form(
-  expression: expression,
+  #expression: expression,
   startTime: start_ts,
   stopTime: end_ts,
   date: 1,      # 1 = custom time
