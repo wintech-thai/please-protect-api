@@ -17,7 +17,7 @@ orgId = ENV['API_ORG']
 # -------------------------
 
 # ตัวอย่าง filter (Arkime expression)
-expression = "protocols == ssh"
+expression = "protocols == ssh" # อันนี้ จะอยู่ตรงช่อง search
 
 # time range (ย้อนหลัง 1 ชั่วโมง)
 start_ts = (Time.now - 3600).to_i
@@ -35,7 +35,7 @@ queryStr = URI.encode_www_form(
 # Proxy -> Arkime API
 # -------------------------
 apiUrl = "api/Proxy/org/#{orgId}/action/Arkime/api/sessions?#{queryStr}"
-apiUrl = "api/Proxy/org/#{orgId}/action/Arkime/api/fields"
+#apiUrl = "api/Proxy/org/#{orgId}/action/Arkime/api/fields" # อันนี้ใช้เป็นตัวบอกว่ามี field อะไรบ้างใช้ในการคิวรี่ได้
 
 param = nil
 
