@@ -146,6 +146,30 @@ namespace Its.PleaseProtect.Api
                 c.Timeout = TimeSpan.FromSeconds(60);
             });
 
+            builder.Services.AddHttpClient("arkime-proxy", c =>
+            {
+                var url  = Environment.GetEnvironmentVariable("ARKIME_URL");
+                var user = Environment.GetEnvironmentVariable("ARKIME_USER");
+                var pass = Environment.GetEnvironmentVariable("ARKIME_PASSWORD");
+
+                if (string.IsNullOrWhiteSpace(url))
+                    throw new Exception("ARKIME_URL is not set");
+
+                c.BaseAddress = new Uri(url);
+                c.Timeout = TimeSpan.FromSeconds(100);
+
+                // ถ้ามี user/pass → ใส่ Basic Auth
+                if (!string.IsNullOrEmpty(user) && !string.IsNullOrEmpty(pass))
+                {
+                    var token = Convert.ToBase64String(
+                        Encoding.UTF8.GetBytes($"{user}:{pass}")
+                    );
+
+                    c.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Basic", token);
+                }
+            });
+
             builder.Services.AddHttpClient("kube-proxy", c =>
             {
                 var url = Environment.GetEnvironmentVariable("KUBE_URL");
