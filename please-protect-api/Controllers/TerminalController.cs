@@ -1,0 +1,96 @@
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Net.WebSockets;
+using k8s;
+
+namespace Its.PleaseProtect.Api.Controllers
+{
+    [Authorize(Policy = "GenericRolePolicy")]
+    [ApiController]
+    [Route("/api/[controller]")]
+    public class TerminalController : ControllerBase
+    {
+        [ExcludeFromCodeCoverage]
+        public TerminalController()
+        {
+        }
+
+        private async Task HandleTerminal(WebSocket clientSocket)
+        {
+            var k8sNamespace = "terminal";
+
+            var config = KubernetesClientConfiguration.InClusterConfig();
+            var k8sClient = new Kubernetes(config);
+
+            var pods = await k8sClient.ListNamespacedPodAsync(
+                namespaceParameter: k8sNamespace,
+                labelSelector: "app=terminal");
+
+            var pod = pods.Items.FirstOrDefault(p => p.Status.Phase == "Running");
+
+            if (pod == null)
+                throw new Exception("No running terminal pod found");
+Console.WriteLine($"DEBUG1 - Pod name = [{pod.Metadata.Name}]");
+            var k8sSocket = await k8sClient.WebSocketNamespacedPodExecAsync(
+                pod.Metadata.Name,      // name (pod name)
+                k8sNamespace,           // namespace
+                ["/bin/bash"],          // command
+                null,                   // container (ถ้ามี container เดียว ใส่ null ได้)
+                true,                   // tty
+                true,                   // stdin
+                true,                   // stdout
+                true                    // stderr
+            );
+
+            var buffer = new byte[8192];
+
+            var t1 = Task.Run(async () =>
+            {
+                while (clientSocket.State == WebSocketState.Open)
+                {
+                    var result = await clientSocket.ReceiveAsync(buffer, CancellationToken.None);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                        break;
+
+                    await k8sSocket.SendAsync(
+                        new ArraySegment<byte>(buffer, 0, result.Count),
+                        WebSocketMessageType.Binary,
+                        true,
+                        CancellationToken.None);
+                }
+            });
+
+            var t2 = Task.Run(async () =>
+            {
+                while (k8sSocket.State == WebSocketState.Open)
+                {
+                    var result = await k8sSocket.ReceiveAsync(buffer, CancellationToken.None);
+
+                    await clientSocket.SendAsync(
+                        new ArraySegment<byte>(buffer, 0, result.Count),
+                        WebSocketMessageType.Binary,
+                        true,
+                        CancellationToken.None);
+                }
+            });
+
+            await Task.WhenAny(t1, t2);
+        }
+        
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/Connect")]
+        public async Task Connect(string id)
+        {
+            if (!HttpContext.WebSockets.IsWebSocketRequest)
+            {
+                HttpContext.Response.StatusCode = 400;
+                return;
+            }
+
+            using var clientSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            await HandleTerminal(clientSocket);
+        }
+    }
+}
