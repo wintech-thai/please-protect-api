@@ -48,6 +48,7 @@ Console.WriteLine($"DEBUG1 - Pod name = [{pod.Metadata.Name}]");
 
             var buffer = new byte[8192];
 
+Console.WriteLine("DEBUG - Starting t1");
             var t1 = Task.Run(async () =>
             {
                 while (clientSocket.State == WebSocketState.Open)
@@ -66,14 +67,19 @@ Console.WriteLine($"DEBUG2.2 - SENT TO POD: {Encoding.UTF8.GetString(buffer,0,re
                 }
             });
 
+Console.WriteLine("DEBUG - Starting t2");
             var t2 = Task.Run(async () =>
             {
-                while (k8sSocket.State == WebSocketState.Open)
+                while (true)
                 {
-Console.WriteLine($"DEBUG3.1 - READING FROM POD");
+Console.WriteLine("DEBUG3.1 - READING FROM POD");
+
                     var result = await k8sSocket.ReceiveAsync(buffer, CancellationToken.None);
-Console.WriteLine($"DEBUG3.2 - RECEIVED FROM POD: {Encoding.UTF8.GetString(buffer,0,result.Count)}");
-                    if (result.Count > 1)
+Console.WriteLine($"DEBUG3.2 - COUNT: {result.Count}, TYPE: {result.MessageType}");
+                    if (result.MessageType == WebSocketMessageType.Close)
+                        break;
+
+                    if (result.Count > 0)
                     {
                         await clientSocket.SendAsync(
                             new ArraySegment<byte>(buffer, 0, result.Count),
@@ -82,11 +88,9 @@ Console.WriteLine($"DEBUG3.2 - RECEIVED FROM POD: {Encoding.UTF8.GetString(buffe
                             CancellationToken.None);
                     }
                 }
-
-Console.WriteLine($"DEBUG4 - DEBUG_SOCKET_STATE: {k8sSocket.State}");
             });
 
-            await Task.WhenAny(t1, t2);
+            await Task.WhenAll(t1, t2);
         }
         
         [ExcludeFromCodeCoverage]
