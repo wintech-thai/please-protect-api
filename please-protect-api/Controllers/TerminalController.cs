@@ -36,7 +36,7 @@ Console.WriteLine($"DEBUG1 - Pod name = [{pod.Metadata.Name}]");
             var k8sSocket = await k8sClient.WebSocketNamespacedPodExecAsync(
                 pod.Metadata.Name,      // name (pod name)
                 k8sNamespace,           // namespace
-                ["/bin/bash"],          // command
+                ["/bin/bash", "-i"],          // command
                 null,                   // container (ถ้ามี container เดียว ใส่ null ได้)
                 true,                   // tty
                 true,                   // stdin
