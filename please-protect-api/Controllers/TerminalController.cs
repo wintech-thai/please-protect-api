@@ -79,6 +79,8 @@ Console.WriteLine($"DEBUG3 - RECEIVED FROM POD: {Encoding.UTF8.GetString(buffer,
                             CancellationToken.None);
                     }
                 }
+
+Console.WriteLine($"DEBUG4 - DEBUG_SOCKET_STATE: {k8sSocket.State}");
             });
 
             await Task.WhenAny(t1, t2);
