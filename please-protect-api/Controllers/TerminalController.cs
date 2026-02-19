@@ -73,7 +73,7 @@ Console.WriteLine($"DEBUG3 - RECEIVED FROM POD: {Encoding.UTF8.GetString(buffer,
                     if (result.Count > 1)
                     {
                         await clientSocket.SendAsync(
-                            new ArraySegment<byte>(buffer, 1, result.Count - 1),
+                            new ArraySegment<byte>(buffer, 0, result.Count),
                             WebSocketMessageType.Binary,
                             true,
                             CancellationToken.None);
