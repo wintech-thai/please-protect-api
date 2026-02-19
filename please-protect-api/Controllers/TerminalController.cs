@@ -66,12 +66,15 @@ Console.WriteLine($"DEBUG1 - Pod name = [{pod.Metadata.Name}]");
                 while (k8sSocket.State == WebSocketState.Open)
                 {
                     var result = await k8sSocket.ReceiveAsync(buffer, CancellationToken.None);
-
-                    await clientSocket.SendAsync(
-                        new ArraySegment<byte>(buffer, 0, result.Count),
-                        WebSocketMessageType.Binary,
-                        true,
-                        CancellationToken.None);
+Console.WriteLine($"DEBUG2 - Result length = [{result.Count}]");
+                    if (result.Count > 1)
+                    {
+                        await clientSocket.SendAsync(
+                            new ArraySegment<byte>(buffer, 1, result.Count - 1),
+                            WebSocketMessageType.Binary,
+                            true,
+                            CancellationToken.None);
+                    }
                 }
             });
 
