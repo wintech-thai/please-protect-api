@@ -88,6 +88,7 @@ Console.WriteLine($"DEBUG3.2 - COUNT: {result.Count}, TYPE: {result.MessageType}
                             CancellationToken.None);
                     }
                 }
+Console.WriteLine($"DEBUG3.3 - BREAK FROM LOOP!!!");
             });
 
             await Task.WhenAll(t1, t2);
