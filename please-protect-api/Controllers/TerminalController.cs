@@ -56,13 +56,13 @@ Console.WriteLine($"DEBUG1 - Pod name = [{pod.Metadata.Name}]");
                     if (result.MessageType == WebSocketMessageType.Close)
                         break;
                         
-Console.WriteLine($"DEBUG2 - SEND TO POD: {Encoding.UTF8.GetString(buffer,0,result.Count)}");
-
+Console.WriteLine($"DEBUG2.1 - SEND TO POD: {Encoding.UTF8.GetString(buffer,0,result.Count)}");
                     await k8sSocket.SendAsync(
                         new ArraySegment<byte>(buffer, 0, result.Count),
                         WebSocketMessageType.Binary,
                         true,
                         CancellationToken.None);
+Console.WriteLine($"DEBUG2.2 - SENT TO POD: {Encoding.UTF8.GetString(buffer,0,result.Count)}");
                 }
             });
 
@@ -70,8 +70,9 @@ Console.WriteLine($"DEBUG2 - SEND TO POD: {Encoding.UTF8.GetString(buffer,0,resu
             {
                 while (k8sSocket.State == WebSocketState.Open)
                 {
+Console.WriteLine($"DEBUG3.1 - READING FROM POD");
                     var result = await k8sSocket.ReceiveAsync(buffer, CancellationToken.None);
-Console.WriteLine($"DEBUG3 - RECEIVED FROM POD: {Encoding.UTF8.GetString(buffer,0,result.Count)}");
+Console.WriteLine($"DEBUG3.2 - RECEIVED FROM POD: {Encoding.UTF8.GetString(buffer,0,result.Count)}");
                     if (result.Count > 1)
                     {
                         await clientSocket.SendAsync(
