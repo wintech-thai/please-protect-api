@@ -35,7 +35,7 @@ queryStr = URI.encode_www_form(
 # Proxy -> Arkime API
 # -------------------------
 apiUrl = "api/Proxy/org/#{orgId}/action/Arkime/api/sessions?#{queryStr}"
-#apiUrl = "api/Proxy/org/#{orgId}/action/Arkime/api/fields" # อันนี้ใช้เป็นตัวบอกว่ามี field อะไรบ้างใช้ในการคิวรี่ได้
+apiUrl = "api/Proxy/org/#{orgId}/action/Arkime/api/fields" # อันนี้ใช้เป็นตัวบอกว่ามี field อะไรบ้างใช้ในการคิวรี่ได้
 
 param = nil
 
