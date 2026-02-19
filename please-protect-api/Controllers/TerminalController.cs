@@ -58,62 +58,58 @@ namespace Its.PleaseProtect.Api.Controllers
                 Console.WriteLine("[DEBUG] 5. K8s Stream Opened Successfully.");
 
                 using var cts = new CancellationTokenSource();
-
-                // --- จุดเช็ค 3: Data Flow (Client -> Pod) ---
                 var clientToK8s = Task.Run(async () =>
                 {
                     var buffer = new byte[8192];
-                    try {
-                        while (clientSocket.State == WebSocketState.Open && !cts.Token.IsCancellationRequested)
-                        {
-                            var result = await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
-                            if (result.MessageType == WebSocketMessageType.Close) {
-                                Console.WriteLine("[DEBUG] Client sent CLOSE frame.");
-                                break;
-                            }
+                    while (clientSocket.State == WebSocketState.Open && !cts.Token.IsCancellationRequested)
+                    {
+                        var result = await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
+                        if (result.MessageType == WebSocketMessageType.Close) break;
 
-                            var input = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                            // ระวัง: ถ้าเป็นพวกปุ่มลูกศรหรือ Tab จะมองไม่เห็นใน Console ทั่วไป
-                            Console.WriteLine($"[DEBUG] >> FROM CLIENT: {input.Replace("\r", "\\r").Replace("\n", "\\n")}");
+                        // สร้าง Array ใหม่ที่ใหญ่ขึ้น 1 Byte เพื่อใส่ Channel 0 ไว้ข้างหน้า
+                        var k8sBuffer = new byte[result.Count + 1];
+                        k8sBuffer[0] = 0; // Channel 0 คือ stdin
+                        Array.Copy(buffer, 0, k8sBuffer, 1, result.Count);
 
-                            await k8sStream.SendAsync(
-                                new ArraySegment<byte>(buffer, 0, result.Count),
-                                WebSocketMessageType.Binary,
-                                true,
-                                cts.Token);
-                        }
-                    } catch (Exception ex) { Console.WriteLine($"[DEBUG] Exception in ClientToK8s: {ex.Message}"); }
+                        Console.WriteLine($"[DEBUG] >> SEND TO K8S (with Channel 0): {Encoding.UTF8.GetString(buffer, 0, result.Count)}");
+
+                        await k8sStream.SendAsync(
+                            new ArraySegment<byte>(k8sBuffer),
+                            WebSocketMessageType.Binary,
+                            true,
+                            cts.Token);
+                    }
                 });
 
-                // --- จุดเช็ค 4: Data Flow (Pod -> Client) ---
+                // Task 2: Kubernetes -> Client (ตัด Byte แรกทิ้งเพื่อเอา Data จริง)
                 var k8sToClient = Task.Run(async () =>
                 {
                     var buffer = new byte[8192];
-                    try {
-                        while (k8sStream.State == WebSocketState.Open && !cts.Token.IsCancellationRequested)
-                        {
-                            var result = await k8sStream.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
-                            if (result.MessageType == WebSocketMessageType.Close) {
-                                Console.WriteLine("[DEBUG] K8s Stream sent CLOSE frame.");
-                                break;
-                            }
+                    while (k8sStream.State == WebSocketState.Open && !cts.Token.IsCancellationRequested)
+                    {
+                        var result = await k8sStream.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
+                        if (result.MessageType == WebSocketMessageType.Close) break;
 
-                            if (result.Count > 0)
+                        if (result.Count > 1) // ต้องมากกว่า 1 เพราะ Byte แรกคือ Channel
+                        {
+                            var channel = buffer[0];
+                            var dataLength = result.Count - 1;
+                            
+                            // Channel 1 คือ stdout, 2 คือ stderr
+                            if (channel == 1 || channel == 2) 
                             {
-                                var output = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                                Console.WriteLine($"[DEBUG] << FROM POD (Count: {result.Count}): {output}");
-                                
+                                var output = Encoding.UTF8.GetString(buffer, 1, dataLength);
+                                Console.WriteLine($"[DEBUG] << FROM POD (Channel {channel}): {output}");
+
                                 await clientSocket.SendAsync(
-                                    new ArraySegment<byte>(buffer, 0, result.Count),
+                                    new ArraySegment<byte>(buffer, 1, dataLength),
                                     WebSocketMessageType.Binary,
                                     true,
                                     cts.Token);
                             }
                         }
-                    } catch (Exception ex) { Console.WriteLine($"[DEBUG] Exception in K8sToClient: {ex.Message}"); }
+                    }
                 });
-
-                await Task.WhenAny(clientToK8s, k8sToClient);
             }
             catch (Exception ex)
             {
