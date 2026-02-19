@@ -83,7 +83,7 @@ namespace Its.PleaseProtect.Api.Controllers
                                 Array.Copy(buffer, 0, k8sIn, 1, result.Count);
 
                                 await k8sStream.SendAsync(new ArraySegment<byte>(k8sIn), WebSocketMessageType.Binary, true, cts.Token);
-                                Console.WriteLine($"[DEBUG] >> SENT {result.Count} bytes to Pod");
+                                //Console.WriteLine($"[DEBUG] >> SENT {result.Count} bytes to Pod");
                             }
                         }
                     } catch (Exception ex) { Console.WriteLine($"[DEBUG] ClientToK8s Error: {ex.Message}"); }
@@ -114,7 +114,7 @@ namespace Its.PleaseProtect.Api.Controllers
                                         cts.Token);
                                     
                                     var output = Encoding.UTF8.GetString(buffer, 1, result.Count - 1);
-                                    Console.WriteLine($"[DEBUG] << RECV {result.Count-1} bytes from Pod (Ch:{channel})");
+                                    //Console.WriteLine($"[DEBUG] << RECV {result.Count-1} bytes from Pod (Ch:{channel})");
                                 }
                             }
                         }
