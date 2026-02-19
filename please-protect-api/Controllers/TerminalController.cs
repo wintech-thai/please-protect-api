@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
 using k8s;
+using System.Text;
 
 namespace Its.PleaseProtect.Api.Controllers
 {
@@ -52,6 +53,8 @@ Console.WriteLine($"DEBUG1 - Pod name = [{pod.Metadata.Name}]");
                     var result = await clientSocket.ReceiveAsync(buffer, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Close)
                         break;
+                        
+Console.WriteLine($"DEBUG2 - SEND TO POD: {Encoding.UTF8.GetString(buffer,0,result.Count)}");
 
                     await k8sSocket.SendAsync(
                         new ArraySegment<byte>(buffer, 0, result.Count),
@@ -66,7 +69,7 @@ Console.WriteLine($"DEBUG1 - Pod name = [{pod.Metadata.Name}]");
                 while (k8sSocket.State == WebSocketState.Open)
                 {
                     var result = await k8sSocket.ReceiveAsync(buffer, CancellationToken.None);
-Console.WriteLine($"DEBUG2 - Result length = [{result.Count}]");
+Console.WriteLine($"DEBUG3 - RECEIVED FROM POD: {Encoding.UTF8.GetString(buffer,0,result.Count)}");
                     if (result.Count > 1)
                     {
                         await clientSocket.SendAsync(
