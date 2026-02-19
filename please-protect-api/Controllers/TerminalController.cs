@@ -32,17 +32,19 @@ namespace Its.PleaseProtect.Api.Controllers
 
             if (pod == null)
                 throw new Exception("No running terminal pod found");
+
 Console.WriteLine($"DEBUG1 - Pod name = [{pod.Metadata.Name}]");
+
             var k8sSocket = await k8sClient.WebSocketNamespacedPodExecAsync(
-                pod.Metadata.Name,      // name (pod name)
-                k8sNamespace,           // namespace
-                ["/bin/bash", "-i"],          // command
-                null,                   // container (ถ้ามี container เดียว ใส่ null ได้)
-                true,                   // tty
-                true,                   // stdin
-                true,                   // stdout
-                true                    // stderr
-            );
+                pod.Metadata.Name,
+                k8sNamespace,
+                command: new[] { "/bin/bash", "-i" },
+                container: null,
+                tty: true,
+                stdin: true,
+                stdout: true,
+                stderr: true,
+                cancellationToken: CancellationToken.None);
 
             var buffer = new byte[8192];
 
