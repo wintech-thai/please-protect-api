@@ -14,7 +14,7 @@ orgId = ENV['API_ORG']
 
 param =  {
   UserName: "#{ENV['USER_NAME']}",
-  TmpUserEmail: "pjame.fb2@gmail.com",
+  TmpUserEmail: "pjame.fb@gmail.com",
   Roles: [ "OWNER" ],
 }
 
