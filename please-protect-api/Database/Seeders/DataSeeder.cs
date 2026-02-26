@@ -149,6 +149,55 @@ public class DataSeeder
         context.SaveChanges();
     }
 
+    private void SeedInitialAdminUser()
+    {
+        var username = Environment.GetEnvironmentVariable("INITIAL_USER");
+
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Console.WriteLine("INITIAL_USER not set. Skipping initial admin seeding.");
+            return;
+        }
+
+        var query = context.Users!.Where(x => x.UserName!.Equals(username)).FirstOrDefault();
+        if (query != null)
+        {
+            //Already exist
+            return;
+        }
+
+        var u = new MUser()
+        {
+            UserId = Guid.NewGuid(),
+            UserName = username,
+            Name = "Admin",
+            LastName = "Admin",
+            IsOrgInitialUser = "YES",
+            UserCreatedDate = DateTime.UtcNow,
+            UserEmail = "admin@localhost"
+        };
+
+        context.Users!.Add(u);
+
+        var ou = new MOrganizationUser()
+        {
+            OrgUserId = Guid.NewGuid(),
+            OrgCustomId = "default",
+            UserId = u.UserId.ToString(),
+            UserName = username,
+            IsOrgInitialUser = "YES",
+            CreatedDate = DateTime.UtcNow,
+            UserEmail = u.UserEmail,
+            RolesList = "OWNER",
+            UserStatus = "Active",
+            Tags = "initial,admin"
+        };
+
+        context.OrganizationUsers!.Add(ou);
+
+        context.SaveChanges();
+    }
+
     public void Seed()
     {
         SeedDefaultOrganization();
@@ -157,5 +206,7 @@ public class DataSeeder
         SeedGlobalOrganization();
         SeedDefaultRoles();
         UpdateApiKeyRole();
+
+        SeedInitialAdminUser();
     }
 }
