@@ -37,3 +37,4 @@ token = result["token"]["access_token"]
 puts(token)
 
 File.write(keyFile, token)
+
