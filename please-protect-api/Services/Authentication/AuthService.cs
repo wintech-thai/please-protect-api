@@ -5,7 +5,9 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Its.PleaseProtect.Api.Models;
+using Its.PleaseProtect.Api.Utils;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
 namespace Its.PleaseProtect.Api.Services
 {
@@ -30,11 +32,13 @@ namespace Its.PleaseProtect.Api.Services
         private readonly string? clientId = "";
         private readonly string? clientSecret = "";
         private readonly string deleteUserEndpoint = "";
+        private readonly IRedisHelper _redis;
         private IJwtSigner signer = new JwtSigner();
 
 
-        public AuthService(IHttpClientFactory httpClientFactory) : base()
+        public AuthService(IHttpClientFactory httpClientFactory, IRedisHelper redis) : base()
         {
+            _redis = redis;
             _httpClientFactory = httpClientFactory;
             var authPath = ""; //Keycloak เวอร์ชันใหม่ ๆ จะไม่มี /auth แล้ว
 
@@ -42,7 +46,23 @@ namespace Its.PleaseProtect.Api.Services
             var urlPrefix = Environment.GetEnvironmentVariable("IDP_URL_PREFIX");
 
             clientId = Environment.GetEnvironmentVariable("IDP_CLIENT_ID");
+
             clientSecret = Environment.GetEnvironmentVariable("IDP_CLIENT_SECRET");
+
+            var key = CacheHelper.CreateRealmClientSecretKey(clientId!);
+            var cachedClientSecret = _redis.GetObjectAsync<string>(key).Result;
+            if (cachedClientSecret != null)
+            {
+                //ถ้ามีค่า client secret ใน cache ให้ใช้ค่านั้นแทนการอ่านจาก environment variable ตรง ๆ
+                //client secret ใน Redis ถูก sync มาจาก idp-realm-cache-loader.rb
+                clientSecret = cachedClientSecret;
+
+                Log.Information("Successfully retrieved cached client secret for key: [{Key}]", key);
+            }
+            else
+            {
+                Log.Warning("Failed to retrieve cached client secret for key: [{Key}]", key);
+            }
 
             issuer = $"{urlPrefix}{authPath}/realms/{realm}";
 //Console.WriteLine($"DEBUG_AUTH1 issuer=[{issuer}]");
