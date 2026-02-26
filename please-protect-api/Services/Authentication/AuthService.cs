@@ -57,7 +57,7 @@ namespace Its.PleaseProtect.Api.Services
                 //client secret ใน Redis ถูก sync มาจาก idp-realm-cache-loader.rb
                 clientSecret = cachedClientSecret;
 
-                Log.Information("Successfully retrieved cached client secret for key: [{Key}]", key);
+                //Log.Information("Successfully retrieved cached client secret for key: [{Key}]", key);
             }
             else
             {
