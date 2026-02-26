@@ -50,7 +50,7 @@ namespace Its.PleaseProtect.Api.Services
             clientSecret = Environment.GetEnvironmentVariable("IDP_CLIENT_SECRET");
 
             var key = CacheHelper.CreateRealmClientSecretKey(clientId!);
-            var cachedClientSecret = _redis.GetObjectAsync<string>(key).Result;
+            var cachedClientSecret = _redis.GetAsync(key).Result;
             if (cachedClientSecret != null)
             {
                 //ถ้ามีค่า client secret ใน cache ให้ใช้ค่านั้นแทนการอ่านจาก environment variable ตรง ๆ
