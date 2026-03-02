@@ -47,7 +47,7 @@ namespace Its.PleaseProtect.Api.Controllers
                 using var k8sStream = await k8sClient.WebSocketNamespacedPodExecAsync(
                     pod.Metadata.Name,
                     k8sNamespace,
-                    command: new[] { "/bin/sh", "-i" }, 
+                    command: new[] { "/bin/bash", "-i" }, 
                     container: null,
                     tty: true,
                     stdin: true,
