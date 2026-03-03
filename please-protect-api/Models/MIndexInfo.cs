@@ -12,7 +12,7 @@ namespace Its.PleaseProtect.Api.Models
         public long StoreSizeBytes { get; set; }
         public string StoreSizeHuman { get; set; }
         public string IlmPhase { get; set; }
-        public DateTime CreationDate { get; set; }
+        public DateTime? CreationDate { get; set; }
         public int PrimaryShards { get; set; }
         public int Replicas { get; set; }
 
@@ -25,7 +25,7 @@ namespace Its.PleaseProtect.Api.Models
             StoreSizeBytes = 0;
             StoreSizeHuman = string.Empty;
             IlmPhase = string.Empty;
-            CreationDate = DateTime.UtcNow;
+            CreationDate = null;
             PrimaryShards = 0;
             Replicas = 0;
         }

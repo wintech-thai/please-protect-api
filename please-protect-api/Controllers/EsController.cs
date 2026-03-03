@@ -58,12 +58,18 @@ namespace Its.PleaseProtect.Api.Controllers
                     ? ilmInfo.GetProperty("phase").GetString()
                     : "N/A";
 
-                var creationDateMs = long.Parse(
-                    item.GetProperty("creation.date").GetString()!);
+                DateTime? creationDate = null;
 
-                var creationDate = DateTimeOffset
-                    .FromUnixTimeMilliseconds(creationDateMs)
-                    .DateTime;
+                if (item.TryGetProperty("creation.date", out var creationProp))
+                {
+                    if (creationProp.ValueKind == JsonValueKind.String &&
+                        long.TryParse(creationProp.GetString(), out var creationDateMs))
+                    {
+                        creationDate = DateTimeOffset
+                            .FromUnixTimeMilliseconds(creationDateMs)
+                            .UtcDateTime;
+                    }
+                }
 
                 allIndices.Add(new MIndexInfo
                 {
