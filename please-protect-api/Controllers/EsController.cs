@@ -45,44 +45,29 @@ namespace Its.PleaseProtect.Api.Controllers
 
         private async Task<long> CountLinkedIndices(string policyName)
         {
-            var response = await _esClient.GetAsync("/_cat/indices?format=json");
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _esClient.GetAsync(
+                "/*/_settings?filter_path=*.settings.index.lifecycle.name");
 
             if (!response.IsSuccessStatusCode)
                 return 0;
+
+            var content = await response.Content.ReadAsStringAsync();
 
             using var doc = JsonDocument.Parse(content);
 
             long count = 0;
 
-            foreach (var index in doc.RootElement.EnumerateArray())
+            foreach (var indexProperty in doc.RootElement.EnumerateObject())
             {
-                var indexName = index.GetProperty("index").GetString();
+                var indexNode = indexProperty.Value;
 
-                if (string.IsNullOrWhiteSpace(indexName))
-                    continue;
-
-                var settingsResp =
-                    await _esClient.GetAsync($"/{indexName}/_settings");
-
-                if (!settingsResp.IsSuccessStatusCode)
-                    continue;
-
-                var settingsJson =
-                    await settingsResp.Content.ReadAsStringAsync();
-
-                using var settingsDoc =
-                    JsonDocument.Parse(settingsJson);
-
-                if (settingsDoc.RootElement
-                    .GetProperty(indexName)
-                    .GetProperty("settings")
-                    .GetProperty("index")
-                    .TryGetProperty("lifecycle.name",
-                        out var lifecycleProp) &&
-                    lifecycleProp.GetString() == policyName)
+                if (indexNode.TryGetProperty("settings", out var settingsNode) &&
+                    settingsNode.TryGetProperty("index", out var indexSettings) &&
+                    indexSettings.TryGetProperty("lifecycle", out var lifecycleNode) &&
+                    lifecycleNode.TryGetProperty("name", out var nameProp))
                 {
-                    count++;
+                    if (nameProp.GetString() == policyName)
+                        count++;
                 }
             }
 
