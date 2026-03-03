@@ -27,6 +27,22 @@ namespace Its.PleaseProtect.Api.Controllers
         {
             var pattern = "censor-events-*";
 
+            // 3️⃣ ดึง settings (codec)
+            var settingsResponse = await _esClient.GetAsync(
+                $"/{pattern}/_settings?filter_path=*.settings.index.codec");
+
+            settingsResponse.EnsureSuccessStatusCode();
+            var settingsJson = JsonSerializer.Deserialize<JsonElement>(
+                await settingsResponse.Content.ReadAsStringAsync());
+
+            // 4️⃣ ดึง stats (store size)
+            var statsResponse = await _esClient.GetAsync(
+                $"/{pattern}/_stats/store?filter_path=indices.*.primaries.store.size_in_bytes");
+
+            statsResponse.EnsureSuccessStatusCode();
+            var statsJson = JsonSerializer.Deserialize<JsonElement>(
+                await statsResponse.Content.ReadAsStringAsync());
+
             // 1️⃣ เรียก _cat/indices
             var catResponse = await _esClient.GetAsync(
                 $"/_cat/indices/{pattern}?format=json&bytes=b" +
@@ -55,6 +71,52 @@ namespace Its.PleaseProtect.Api.Controllers
             foreach (var item in catIndices!)
             {
                 var indexName = item.GetProperty("index").GetString()!;
+
+                // ===== Compression Info =====
+
+                string codec = "default";
+                string compressionAlgorithm = "LZ4";
+                double? estimatedRatio = null;
+
+                // codec
+                if (settingsJson.TryGetProperty(indexName, out var settingRoot) &&
+                    settingRoot.TryGetProperty("settings", out var settingsNode) &&
+                    settingsNode.TryGetProperty("index", out var indexNode) &&
+                    indexNode.TryGetProperty("codec", out var codecProp) &&
+                    codecProp.ValueKind == JsonValueKind.String)
+                {
+                    codec = codecProp.GetString()!;
+                }
+
+                compressionAlgorithm = codec == "best_compression"
+                    ? "DEFLATE"
+                    : "LZ4";
+
+                // store size
+                long? storeSizeFromStats = null;
+
+                if (statsJson.TryGetProperty("indices", out var indicesNode) &&
+                    indicesNode.TryGetProperty(indexName, out var indexStats) &&
+                    indexStats.TryGetProperty("primaries", out var primariesNode) &&
+                    primariesNode.TryGetProperty("store", out var storeNode) &&
+                    storeNode.TryGetProperty("size_in_bytes", out var sizeProp) &&
+                    sizeProp.ValueKind == JsonValueKind.Number)
+                {
+                    storeSizeFromStats = sizeProp.GetInt64();
+                }
+
+                // estimate compression ratio (แบบหยาบ)
+                if (storeSizeFromStats.HasValue &&
+                    item.TryGetProperty("docs.count", out var docsProp) &&
+                    long.TryParse(docsProp.GetString(), out var docCount) &&
+                    docCount > 0)
+                {
+                    var avgDocSize = storeSizeFromStats.Value / (double)docCount;
+
+                    // สมมติ uncompressed doc ~ 1.5KB average
+                    var estimatedUncompressed = 1500.0;
+                    estimatedRatio = avgDocSize / estimatedUncompressed;
+                }
 
                 string ilmPhase = "N/A";
                 if (ilmIndices.TryGetProperty(indexName, out var ilmInfo))
@@ -90,7 +152,11 @@ namespace Its.PleaseProtect.Api.Controllers
                     IlmPhase = ilmPhase!,
                     CreationDate = creationDate,
                     PrimaryShards = int.Parse(item.GetProperty("pri").GetString()!),
-                    Replicas = int.Parse(item.GetProperty("rep").GetString()!)
+                    Replicas = int.Parse(item.GetProperty("rep").GetString()!),
+
+                    Codec = codec,
+                    CompressionAlgorithm = compressionAlgorithm,
+                    EstimatedCompressionRatio = estimatedRatio
                 });
             }
 

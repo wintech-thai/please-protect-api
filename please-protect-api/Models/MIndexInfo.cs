@@ -15,6 +15,9 @@ namespace Its.PleaseProtect.Api.Models
         public DateTime? CreationDate { get; set; }
         public int PrimaryShards { get; set; }
         public int Replicas { get; set; }
+        public string Codec { get; set; } = "default";
+        public string CompressionAlgorithm { get; set; } = "LZ4";
+        public double? EstimatedCompressionRatio { get; set; }
 
         public MIndexInfo()
         {
@@ -28,6 +31,7 @@ namespace Its.PleaseProtect.Api.Models
             CreationDate = null;
             PrimaryShards = 0;
             Replicas = 0;
+
         }
     }
 }
