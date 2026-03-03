@@ -15,7 +15,7 @@ orgId = ENV['API_ORG']
 apiUrl = "api/Es/org/#{orgId}/action/GetIndices"
 param = {
   "Offset": 1,
-  "Limit": 10
+  "Limit": 5
 }
 
 result = make_request(:post, apiUrl, param)

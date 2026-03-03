@@ -29,7 +29,9 @@ namespace Its.PleaseProtect.Api.Controllers
 
             // 1️⃣ เรียก _cat/indices
             var catResponse = await _esClient.GetAsync(
-                $"/_cat/indices/{pattern}?format=json&bytes=b");
+                $"/_cat/indices/{pattern}?format=json&bytes=b" +
+                $"&h=index,health,status,docs.count,store.size,pri,rep,creation.date" +
+                $"&s=creation.date:desc");
 
             catResponse.EnsureSuccessStatusCode();
 
