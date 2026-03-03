@@ -105,17 +105,12 @@ namespace Its.PleaseProtect.Api.Controllers
                     storeSizeFromStats = sizeProp.GetInt64();
                 }
 
-                // estimate compression ratio (แบบหยาบ)
-                if (storeSizeFromStats.HasValue &&
-                    item.TryGetProperty("docs.count", out var docsProp) &&
-                    long.TryParse(docsProp.GetString(), out var docCount) &&
+                if (storeSizeFromStats.HasValue && item.TryGetProperty("docs.count", out var docCountProp) &&
+                    docCountProp.ValueKind == JsonValueKind.String &&
+                    long.TryParse(docCountProp.GetString(), out var docCount) &&
                     docCount > 0)
                 {
-                    var avgDocSize = storeSizeFromStats.Value / (double)docCount;
-
-                    // สมมติ uncompressed doc ~ 1.5KB average
-                    var estimatedUncompressed = 1500.0;
-                    estimatedRatio = avgDocSize / estimatedUncompressed;
+                    estimatedRatio = (double) storeSizeFromStats.Value / docCount;
                 }
 
                 string ilmPhase = "N/A";
@@ -156,7 +151,7 @@ namespace Its.PleaseProtect.Api.Controllers
 
                     Codec = codec,
                     CompressionAlgorithm = compressionAlgorithm,
-                    EstimatedCompressionRatio = estimatedRatio
+                    EstimatedAvgDocSizeBytes = estimatedRatio
                 });
             }
 

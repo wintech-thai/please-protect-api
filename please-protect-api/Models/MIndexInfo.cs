@@ -17,7 +17,7 @@ namespace Its.PleaseProtect.Api.Models
         public int Replicas { get; set; }
         public string Codec { get; set; } = "default";
         public string CompressionAlgorithm { get; set; } = "LZ4";
-        public double? EstimatedCompressionRatio { get; set; }
+        public double? EstimatedAvgDocSizeBytes { get; init; }
 
         public MIndexInfo()
         {
