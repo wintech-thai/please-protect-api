@@ -20,6 +20,119 @@ namespace Its.PleaseProtect.Api.Controllers
             _esClient = factory.CreateClient("es-proxy");
         }
 
+        private static long ExtractDays(JsonElement phases, string phaseName)
+        {
+            if (!phases.TryGetProperty(phaseName, out var phaseNode))
+                return 0;
+
+            if (!phaseNode.TryGetProperty("min_age", out var minAgeProp))
+                return 0;
+
+            var minAgeStr = minAgeProp.GetString();
+
+            if (string.IsNullOrWhiteSpace(minAgeStr))
+                return 0;
+
+            // รองรับ format เช่น "7d"
+            if (minAgeStr.EndsWith("d") &&
+                long.TryParse(minAgeStr.TrimEnd('d'), out var days))
+            {
+                return days;
+            }
+
+            return 0;
+        }
+
+        private async Task<long> CountLinkedIndices(string policyName)
+        {
+            var response = await _esClient.GetAsync("/_cat/indices?format=json");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+                return 0;
+
+            using var doc = JsonDocument.Parse(content);
+
+            long count = 0;
+
+            foreach (var index in doc.RootElement.EnumerateArray())
+            {
+                var indexName = index.GetProperty("index").GetString();
+
+                if (string.IsNullOrWhiteSpace(indexName))
+                    continue;
+
+                var settingsResp =
+                    await _esClient.GetAsync($"/{indexName}/_settings");
+
+                if (!settingsResp.IsSuccessStatusCode)
+                    continue;
+
+                var settingsJson =
+                    await settingsResp.Content.ReadAsStringAsync();
+
+                using var settingsDoc =
+                    JsonDocument.Parse(settingsJson);
+
+                if (settingsDoc.RootElement
+                    .GetProperty(indexName)
+                    .GetProperty("settings")
+                    .GetProperty("index")
+                    .TryGetProperty("lifecycle.name",
+                        out var lifecycleProp) &&
+                    lifecycleProp.GetString() == policyName)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetIndexPolicy")]
+        public async Task<IActionResult> GetIndexPolicy(string id)
+        {
+            const string policyName = "censor-logs-ilm-policy";
+
+            var requestUrl = $"/_ilm/policy/{policyName}";
+
+            using var response = await _esClient.GetAsync(requestUrl);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+                return StatusCode((int)response.StatusCode, content);
+
+            using var doc = JsonDocument.Parse(content);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty(policyName, out var policyNode))
+                return NotFound("Policy not found");
+
+            var phases = policyNode
+                .GetProperty("policy")
+                .GetProperty("phases");
+
+            long warmDays = ExtractDays(phases, "warm");
+            long coldDays = ExtractDays(phases, "cold");
+            long deleteDays = ExtractDays(phases, "delete");
+
+            // Optional: นับจำนวน index ที่ link policy นี้อยู่
+            var linkedCount = await CountLinkedIndices(policyName);
+
+            var result = new MIndexLifeCyclePolicy
+            {
+                PolicyName = policyName,
+                LinkedIndices = linkedCount,
+                WarmDayCount = warmDays,
+                ColdDayCount = coldDays,
+                DeleteDayCount = deleteDays
+            };
+
+            return Ok(result);
+        }
+
         [ExcludeFromCodeCoverage]
         [HttpGet]
         [Route("org/{id}/action/GetIndexStat/{indexName}")]
