@@ -4,6 +4,7 @@ using Its.PleaseProtect.Api.ViewsModels;
 using Its.PleaseProtect.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace Its.PleaseProtect.Api.Controllers
 {
@@ -18,6 +19,70 @@ namespace Its.PleaseProtect.Api.Controllers
         public EsController(IHttpClientFactory factory)
         {
             _esClient = factory.CreateClient("es-proxy");
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/UpdateIndexPolicy")]
+        public async Task<IActionResult> UpdateIndexPolicy(
+            string id,
+            [FromBody] MIndexLifeCyclePolicy request)
+        {
+            const string policyName = "censor-logs-ilm-policy";
+
+            if (request == null)
+                return BadRequest("Request body is required");
+
+            if (request.WarmDayCount < 0 ||
+                request.ColdDayCount < 0 ||
+                request.DeleteDayCount < 0)
+            {
+                return BadRequest("Day counts must be >= 0");
+            }
+
+            var policyObject = new
+            {
+                policy = new
+                {
+                    phases = new
+                    {
+                        hot = new
+                        {
+                            actions = new { }
+                        },
+                        warm = new
+                        {
+                            min_age = $"{request.WarmDayCount}d",
+                            actions = new { }
+                        },
+                        cold = new
+                        {
+                            min_age = $"{request.ColdDayCount}d",
+                            actions = new { }
+                        },
+                        delete = new
+                        {
+                            min_age = $"{request.DeleteDayCount}d",
+                            actions = new
+                            {
+                                delete = new { }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var json = JsonSerializer.Serialize(policyObject);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var response = await _esClient.PutAsync(
+                $"/_ilm/policy/{policyName}",
+                content);
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            // ส่ง status + body จาก ES กลับไปตรง ๆ
+            return StatusCode((int)response.StatusCode, responseBody);
         }
 
         private static long ExtractDays(JsonElement phases, string phaseName)
