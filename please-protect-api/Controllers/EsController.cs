@@ -21,6 +21,33 @@ namespace Its.PleaseProtect.Api.Controllers
         }
 
         [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetIndexSetting/{indexName}")]
+        public async Task<IActionResult> GetIndexSetting(string id, string indexName)
+        {
+            if (string.IsNullOrWhiteSpace(indexName))
+                return BadRequest("indexName is required");
+
+            // optional: validate pattern ป้องกัน injection
+            if (indexName.Contains("..") || indexName.Contains("/"))
+                return BadRequest("invalid indexName");
+
+            var requestUrl = $"/{indexName}/_settings";
+
+            using var response = await _esClient.GetAsync(requestUrl);
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, content);
+            }
+
+            // ส่ง JSON ตรง ๆ กลับไปเลย
+            return Content(content, "application/json");
+        }
+
+        [ExcludeFromCodeCoverage]
         [HttpPost]
         [Route("org/{id}/action/GetIndices")]
         public async Task<IActionResult> GetIndices(string id, [FromBody] VMIndexInfo request)
