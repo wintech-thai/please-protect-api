@@ -22,6 +22,36 @@ namespace Its.PleaseProtect.Api.Controllers
 
         [ExcludeFromCodeCoverage]
         [HttpGet]
+        [Route("org/{id}/action/GetIndexStat/{indexName}")]
+        public async Task<IActionResult> GetIndexStat(string id, string indexName)
+        {
+            if (string.IsNullOrWhiteSpace(indexName))
+                return BadRequest("indexName is required");
+
+            // ป้องกัน path traversal
+            if (indexName.Contains("..") || indexName.Contains("/"))
+                return BadRequest("invalid indexName");
+
+            // ป้องกัน system indices
+            if (indexName.StartsWith("."))
+                return Forbid("System indices are not allowed");
+
+            // ดึงเฉพาะ store + docs เพื่อลด payload
+            var requestUrl = $"/{indexName}/_stats/store,docs";
+
+            using var response = await _esClient.GetAsync(requestUrl);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, content);
+            }
+
+            return Content(content, "application/json");
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
         [Route("org/{id}/action/GetIndexSetting/{indexName}")]
         public async Task<IActionResult> GetIndexSetting(string id, string indexName)
         {
