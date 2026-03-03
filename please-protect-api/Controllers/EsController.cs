@@ -5,6 +5,7 @@ using Its.PleaseProtect.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Its.PleaseProtect.Api.Controllers
 {
@@ -211,6 +212,34 @@ namespace Its.PleaseProtect.Api.Controllers
             }
 
             return Content(content, "application/json");
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpDelete]
+        [Route("org/{id}/action/DeleteIndex/{indexName}")]
+        public async Task<IActionResult> DeleteIndex(string id, string indexName)
+        {
+            if (string.IsNullOrWhiteSpace(indexName))
+                return BadRequest("indexName is required");
+
+            // ป้องกัน path traversal
+            if (indexName.Contains("..") || indexName.Contains("/"))
+                return BadRequest("invalid indexName");
+
+            // ป้องกันลบ system indices
+            if (indexName.StartsWith("."))
+                return Forbid("System indices are not allowed");
+
+            // Optional: จำกัด format ตัวอักษรให้ปลอดภัยขึ้น
+            if (!Regex.IsMatch(indexName, @"^[a-zA-Z0-9_\-]+$"))
+                return BadRequest("Invalid index name format");
+
+            using var response = await _esClient.DeleteAsync($"/{indexName}");
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            // forward status + response จาก ES
+            return StatusCode((int)response.StatusCode, responseBody);
         }
 
         [ExcludeFromCodeCoverage]
