@@ -54,9 +54,15 @@ namespace Its.PleaseProtect.Api.Controllers
             {
                 var indexName = item.GetProperty("index").GetString()!;
 
-                var ilmPhase = ilmIndices.TryGetProperty(indexName, out var ilmInfo)
-                    ? ilmInfo.GetProperty("phase").GetString()
-                    : "N/A";
+                string ilmPhase = "N/A";
+                if (ilmIndices.TryGetProperty(indexName, out var ilmInfo))
+                {
+                    if (ilmInfo.TryGetProperty("phase", out var phaseProp) &&
+                        phaseProp.ValueKind == JsonValueKind.String)
+                    {
+                        ilmPhase = phaseProp.GetString()!;
+                    }
+                }
 
                 DateTime? creationDate = null;
 
