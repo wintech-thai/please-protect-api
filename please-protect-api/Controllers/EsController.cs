@@ -1,0 +1,425 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using Its.PleaseProtect.Api.ViewsModels;
+using Its.PleaseProtect.Api.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Text;
+using System.Text.RegularExpressions;
+
+namespace Its.PleaseProtect.Api.Controllers
+{
+    [Authorize(Policy = "GenericRolePolicy")]
+    [ApiController]
+    [Route("/api/[controller]")]
+    public class EsController : ControllerBase
+    {
+        private readonly HttpClient _esClient;
+
+        [ExcludeFromCodeCoverage]
+        public EsController(IHttpClientFactory factory)
+        {
+            _esClient = factory.CreateClient("es-proxy");
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/UpdateIndexPolicy")]
+        public async Task<IActionResult> UpdateIndexPolicy(
+            string id,
+            [FromBody] MIndexLifeCyclePolicy request)
+        {
+            const string policyName = "censor-logs-ilm-policy";
+
+            if (request == null)
+                return BadRequest("Request body is required");
+
+            if (request.WarmDayCount < 0 ||
+                request.ColdDayCount < 0 ||
+                request.DeleteDayCount < 0)
+            {
+                return BadRequest("Day counts must be >= 0");
+            }
+
+            var policyObject = new
+            {
+                policy = new
+                {
+                    phases = new
+                    {
+                        hot = new
+                        {
+                            actions = new { }
+                        },
+                        warm = new
+                        {
+                            min_age = $"{request.WarmDayCount}d",
+                            actions = new { }
+                        },
+                        cold = new
+                        {
+                            min_age = $"{request.ColdDayCount}d",
+                            actions = new { }
+                        },
+                        delete = new
+                        {
+                            min_age = $"{request.DeleteDayCount}d",
+                            actions = new
+                            {
+                                delete = new { }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var json = JsonSerializer.Serialize(policyObject);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var response = await _esClient.PutAsync(
+                $"/_ilm/policy/{policyName}",
+                content);
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            // ส่ง status + body จาก ES กลับไปตรง ๆ
+            return StatusCode((int)response.StatusCode, responseBody);
+        }
+
+        private static long ExtractDays(JsonElement phases, string phaseName)
+        {
+            if (!phases.TryGetProperty(phaseName, out var phaseNode))
+                return 0;
+
+            if (!phaseNode.TryGetProperty("min_age", out var minAgeProp))
+                return 0;
+
+            var minAgeStr = minAgeProp.GetString();
+
+            if (string.IsNullOrWhiteSpace(minAgeStr))
+                return 0;
+
+            // รองรับ format เช่น "7d"
+            if (minAgeStr.EndsWith("d") &&
+                long.TryParse(minAgeStr.TrimEnd('d'), out var days))
+            {
+                return days;
+            }
+
+            return 0;
+        }
+
+        private async Task<long> CountLinkedIndices(string policyName)
+        {
+            var response = await _esClient.GetAsync(
+                "/*/_settings?filter_path=*.settings.index.lifecycle.name");
+
+            if (!response.IsSuccessStatusCode)
+                return 0;
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            using var doc = JsonDocument.Parse(content);
+
+            long count = 0;
+
+            foreach (var indexProperty in doc.RootElement.EnumerateObject())
+            {
+                var indexNode = indexProperty.Value;
+
+                if (indexNode.TryGetProperty("settings", out var settingsNode) &&
+                    settingsNode.TryGetProperty("index", out var indexSettings) &&
+                    indexSettings.TryGetProperty("lifecycle", out var lifecycleNode) &&
+                    lifecycleNode.TryGetProperty("name", out var nameProp))
+                {
+                    if (nameProp.GetString() == policyName)
+                        count++;
+                }
+            }
+
+            return count;
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetIndexPolicy")]
+        public async Task<IActionResult> GetIndexPolicy(string id)
+        {
+            const string policyName = "censor-logs-ilm-policy";
+
+            var requestUrl = $"/_ilm/policy/{policyName}";
+
+            using var response = await _esClient.GetAsync(requestUrl);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+                return StatusCode((int)response.StatusCode, content);
+
+            using var doc = JsonDocument.Parse(content);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty(policyName, out var policyNode))
+                return NotFound("Policy not found");
+
+            var phases = policyNode
+                .GetProperty("policy")
+                .GetProperty("phases");
+
+            long warmDays = ExtractDays(phases, "warm");
+            long coldDays = ExtractDays(phases, "cold");
+            long deleteDays = ExtractDays(phases, "delete");
+
+            // Optional: นับจำนวน index ที่ link policy นี้อยู่
+            var linkedCount = await CountLinkedIndices(policyName);
+
+            var result = new MIndexLifeCyclePolicy
+            {
+                PolicyName = policyName,
+                LinkedIndices = linkedCount,
+                WarmDayCount = warmDays,
+                ColdDayCount = coldDays,
+                DeleteDayCount = deleteDays
+            };
+
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetIndexStat/{indexName}")]
+        public async Task<IActionResult> GetIndexStat(string id, string indexName)
+        {
+            if (string.IsNullOrWhiteSpace(indexName))
+                return BadRequest("indexName is required");
+
+            // ป้องกัน path traversal
+            if (indexName.Contains("..") || indexName.Contains("/"))
+                return BadRequest("invalid indexName");
+
+            // ป้องกัน system indices
+            if (indexName.StartsWith("."))
+                return Forbid("System indices are not allowed");
+
+            // ดึงเฉพาะ store + docs เพื่อลด payload
+            var requestUrl = $"/{indexName}/_stats/store,docs";
+
+            using var response = await _esClient.GetAsync(requestUrl);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, content);
+            }
+
+            return Content(content, "application/json");
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpDelete]
+        [Route("org/{id}/action/DeleteIndex/{indexName}")]
+        public async Task<IActionResult> DeleteIndex(string id, string indexName)
+        {
+            if (string.IsNullOrWhiteSpace(indexName))
+                return BadRequest("indexName is required");
+
+            // ป้องกัน path traversal
+            if (indexName.Contains("..") || indexName.Contains("/"))
+                return BadRequest("invalid indexName");
+
+            // ป้องกันลบ system indices
+            if (indexName.StartsWith("."))
+                return Forbid("System indices are not allowed");
+
+            // Optional: จำกัด format ตัวอักษรให้ปลอดภัยขึ้น
+            if (!Regex.IsMatch(indexName, @"^[a-zA-Z0-9_\-]+$"))
+                return BadRequest("Invalid index name format");
+
+            using var response = await _esClient.DeleteAsync($"/{indexName}");
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            // forward status + response จาก ES
+            return StatusCode((int)response.StatusCode, responseBody);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetIndexSetting/{indexName}")]
+        public async Task<IActionResult> GetIndexSetting(string id, string indexName)
+        {
+            if (string.IsNullOrWhiteSpace(indexName))
+                return BadRequest("indexName is required");
+
+            // optional: validate pattern ป้องกัน injection
+            if (indexName.Contains("..") || indexName.Contains("/"))
+                return BadRequest("invalid indexName");
+
+            var requestUrl = $"/{indexName}/_settings";
+
+            using var response = await _esClient.GetAsync(requestUrl);
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, content);
+            }
+
+            // ส่ง JSON ตรง ๆ กลับไปเลย
+            return Content(content, "application/json");
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/GetIndices")]
+        public async Task<IActionResult> GetIndices(string id, [FromBody] VMIndexInfo request)
+        {
+            var pattern = "censor-events-*";
+
+            // 3️⃣ ดึง settings (codec)
+            var settingsResponse = await _esClient.GetAsync(
+                $"/{pattern}/_settings?filter_path=*.settings.index.codec");
+
+            settingsResponse.EnsureSuccessStatusCode();
+            var settingsJson = JsonSerializer.Deserialize<JsonElement>(
+                await settingsResponse.Content.ReadAsStringAsync());
+
+            // 4️⃣ ดึง stats (store size)
+            var statsResponse = await _esClient.GetAsync(
+                $"/{pattern}/_stats/store?filter_path=indices.*.primaries.store.size_in_bytes");
+
+            statsResponse.EnsureSuccessStatusCode();
+            var statsJson = JsonSerializer.Deserialize<JsonElement>(
+                await statsResponse.Content.ReadAsStringAsync());
+
+            // 1️⃣ เรียก _cat/indices
+            var catResponse = await _esClient.GetAsync(
+                $"/_cat/indices/{pattern}?format=json&bytes=b" +
+                $"&h=index,health,status,docs.count,store.size,pri,rep,creation.date" +
+                $"&s=creation.date:desc");
+
+            catResponse.EnsureSuccessStatusCode();
+
+            var catContent = await catResponse.Content.ReadAsStringAsync();
+            var catIndices = JsonSerializer.Deserialize<List<JsonElement>>(catContent);
+
+            // 2️⃣ เรียก ILM explain
+            var ilmResponse = await _esClient.GetAsync(
+                $"/{pattern}/_ilm/explain");
+
+            ilmResponse.EnsureSuccessStatusCode();
+
+            var ilmContent = await ilmResponse.Content.ReadAsStringAsync();
+            var ilmJson = JsonSerializer.Deserialize<JsonElement>(ilmContent);
+
+            var ilmIndices = ilmJson.GetProperty("indices");
+
+            // 3️⃣ รวมข้อมูล
+            var allIndices = new List<MIndexInfo>();
+
+            foreach (var item in catIndices!)
+            {
+                var indexName = item.GetProperty("index").GetString()!;
+
+                // ===== Compression Info =====
+
+                string codec = "default";
+                string compressionAlgorithm = "LZ4";
+                double? estimatedRatio = null;
+
+                // codec
+                if (settingsJson.TryGetProperty(indexName, out var settingRoot) &&
+                    settingRoot.TryGetProperty("settings", out var settingsNode) &&
+                    settingsNode.TryGetProperty("index", out var indexNode) &&
+                    indexNode.TryGetProperty("codec", out var codecProp) &&
+                    codecProp.ValueKind == JsonValueKind.String)
+                {
+                    codec = codecProp.GetString()!;
+                }
+
+                compressionAlgorithm = codec == "best_compression"
+                    ? "DEFLATE"
+                    : "LZ4";
+
+                // store size
+                long? storeSizeFromStats = null;
+
+                if (statsJson.TryGetProperty("indices", out var indicesNode) &&
+                    indicesNode.TryGetProperty(indexName, out var indexStats) &&
+                    indexStats.TryGetProperty("primaries", out var primariesNode) &&
+                    primariesNode.TryGetProperty("store", out var storeNode) &&
+                    storeNode.TryGetProperty("size_in_bytes", out var sizeProp) &&
+                    sizeProp.ValueKind == JsonValueKind.Number)
+                {
+                    storeSizeFromStats = sizeProp.GetInt64();
+                }
+
+                if (storeSizeFromStats.HasValue && item.TryGetProperty("docs.count", out var docCountProp) &&
+                    docCountProp.ValueKind == JsonValueKind.String &&
+                    long.TryParse(docCountProp.GetString(), out var docCount) &&
+                    docCount > 0)
+                {
+                    estimatedRatio = (double) storeSizeFromStats.Value / docCount;
+                }
+
+                string ilmPhase = "N/A";
+                if (ilmIndices.TryGetProperty(indexName, out var ilmInfo))
+                {
+                    if (ilmInfo.TryGetProperty("phase", out var phaseProp) &&
+                        phaseProp.ValueKind == JsonValueKind.String)
+                    {
+                        ilmPhase = phaseProp.GetString()!;
+                    }
+                }
+
+                DateTime? creationDate = null;
+
+                if (item.TryGetProperty("creation.date", out var creationProp))
+                {
+                    if (creationProp.ValueKind == JsonValueKind.String &&
+                        long.TryParse(creationProp.GetString(), out var creationDateMs))
+                    {
+                        creationDate = DateTimeOffset
+                            .FromUnixTimeMilliseconds(creationDateMs)
+                            .UtcDateTime;
+                    }
+                }
+
+                allIndices.Add(new MIndexInfo
+                {
+                    IndexName = indexName,
+                    Health = item.GetProperty("health").GetString()!,
+                    Status = item.GetProperty("status").GetString()!,
+                    DocCount = long.Parse(item.GetProperty("docs.count").GetString()!),
+                    StoreSizeBytes = long.Parse(item.GetProperty("store.size").GetString()!),
+                    StoreSizeHuman = item.GetProperty("store.size").GetString()!,
+                    IlmPhase = ilmPhase!,
+                    CreationDate = creationDate,
+                    PrimaryShards = int.Parse(item.GetProperty("pri").GetString()!),
+                    Replicas = int.Parse(item.GetProperty("rep").GetString()!),
+
+                    Codec = codec,
+                    CompressionAlgorithm = compressionAlgorithm,
+                    EstimatedAvgDocSizeBytes = estimatedRatio
+                });
+            }
+
+            // 4️⃣ paging (in-memory เพราะมี ~1000 index เท่านั้น)
+            var total = allIndices.Count;
+
+            var paged = allIndices
+                .OrderByDescending(x => x.CreationDate)
+                .Skip((request.Offset - 1) * request.Limit)
+                .Take(request.Limit)
+                .ToList();
+
+            return Ok(new
+            {
+                offset = request.Offset,
+                limit = request.Limit,
+                total,
+                data = paged
+            });
+        }
+    }
+}
