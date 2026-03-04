@@ -66,6 +66,7 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<IIoCRepository, IoCRepository>();
             builder.Services.AddScoped<ISubnetRepository, SubnetRepository>();
             builder.Services.AddScoped<ICustomRoleRepository, CustomRoleRepository>();
+            builder.Services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
             builder.Services.AddScoped<IAlertEventRepository, AlertEventRepository>();
             builder.Services.AddScoped<IAlertChannelRepository, AlertChannelRepository>();
 

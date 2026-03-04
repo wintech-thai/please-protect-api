@@ -6,12 +6,71 @@ namespace Its.PleaseProtect.Api.Services
 {
     public class ConfigurationService : BaseService, IConfigurationService
     {
-        private readonly IIoCRepository? repository = null;
+        private readonly IConfigurationRepository? repository = null;
 
-        public ConfigurationService(IIoCRepository repo) : base()
+        public ConfigurationService(IConfigurationRepository repo) : base()
         {
             repository = repo;
         }
+
+        public async Task<MConfiguration?> GetDomain(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+            return await repository!.GetConfigurationByType("Domain");
+        }
+
+        public async Task<MConfiguration> SetDomain(string orgId, string domain)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "Domain",
+                ConfigValue = domain
+            });
+
+            return c;
+        }
+
+        public async Task<MConfiguration?> GetOrgShortName(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+            return await repository!.GetConfigurationByType("OrgShortName");
+        }
+
+        public async Task<MConfiguration> SetOrgShortName(string orgId, string shortName)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "OrgShortName",
+                ConfigValue = shortName
+            });
+
+            return c;
+        }
+
+
+        public async Task<MConfiguration?> GetLogo(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+            return await repository!.GetConfigurationByType("Logo");
+        }
+
+        public async Task<MConfiguration> SetLogo(string orgId, string logoUrl)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "Logo",
+                ConfigValue = logoUrl
+            });
+
+            return c;
+        }
+
 
         public MVEsConfig GetEsConfig(string orgId)
         {
