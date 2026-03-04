@@ -5,15 +5,13 @@ namespace Its.PleaseProtect.Api.Services
 {
     public interface IConfigurationService
     {
-        public MVEsConfig GetEsConfig(string orgId);
+        public Task<MVConfiguration?> GetDomain(string orgId);
+        public Task<MVConfiguration> SetDomain(string orgId, string domain);
 
-        public Task<MConfiguration?> GetDomain(string orgId);
-        public Task<MConfiguration> SetDomain(string orgId, string domain);
+        public Task<MVConfiguration?> GetOrgShortName(string orgId);
+        public Task<MVConfiguration> SetOrgShortName(string orgId, string shortName);
 
-        public Task<MConfiguration?> GetOrgShortName(string orgId);
-        public Task<MConfiguration> SetOrgShortName(string orgId, string shortName);
-
-        public Task<MConfiguration?> GetLogo(string orgId);
-        public Task<MConfiguration> SetLogo(string orgId, string logoUrl);
+        public Task<MVConfiguration?> GetLogo(string orgId);
+        public Task<MVConfiguration> SetLogo(string orgId, string logoUrl);
     }
 }
