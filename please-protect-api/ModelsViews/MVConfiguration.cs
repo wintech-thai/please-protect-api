@@ -4,10 +4,10 @@ using Its.PleaseProtect.Api.Models;
 namespace Its.PleaseProtect.Api.ModelsViews
 {
     [ExcludeFromCodeCoverage]
-    public class MVEsConfig
+    public class MVConfiguration
     {
         public string? Status { get; set; }
         public string? Description { get; set; }
-        public MEsConfig? EsConfig { get; set; }
+        public MConfiguration? Configuration { get; set; }
     }
 }

@@ -11,11 +11,12 @@ $stdout.sync = true
 load_env("./.env")
 
 orgId = ENV['API_ORG']
+indexName = "censor-events-20260224-logstash-dispatcher-es-1"
 
-apiUrl = "api/Configuration/org/#{orgId}/action/GetEsConfig"
+apiUrl = "api/Es/org/#{orgId}/action/DeleteIndex/#{indexName}"
 param = nil
 
-result = make_request(:get, apiUrl, param)
+result = make_request(:delete, apiUrl, param)
 
 json = result.to_json
 puts(json)

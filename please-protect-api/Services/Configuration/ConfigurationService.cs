@@ -6,68 +6,145 @@ namespace Its.PleaseProtect.Api.Services
 {
     public class ConfigurationService : BaseService, IConfigurationService
     {
-        private readonly IIoCRepository? repository = null;
+        private readonly IConfigurationRepository? repository = null;
 
-        public ConfigurationService(IIoCRepository repo) : base()
+        public ConfigurationService(IConfigurationRepository repo) : base()
         {
             repository = repo;
         }
 
-        public MVEsConfig GetEsConfig(string orgId)
+        public async Task<MVConfiguration?> GetDomain(string orgId)
+        {
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Domain retrieved successfully"
+            };
+
+            repository!.SetCustomOrgId(orgId);
+            var result = await repository!.GetConfigurationByType("Domain");
+
+            if (result == null)
+            {
+                r.Status = "NOT_FOUND";
+                r.Description = "Domain not found for the specified organization";
+                return r;
+            }
+
+            r.Configuration = result;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration> SetDomain(string orgId, string domain)
+        {
+            repository!.SetCustomOrgId(orgId);
+            
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Domain retrieved successfully"
+            };
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "Domain",
+                ConfigValue = domain
+            });
+
+            r.Configuration = c;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration?> GetOrgShortName(string orgId)
         {
             repository!.SetCustomOrgId(orgId);
 
-            var r = new MVEsConfig()
-            {
-                Status = "OK",
-                Description = "Success"
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Organization short name retrieved successfully"
             };
 
-            var url = Environment.GetEnvironmentVariable("ES_URL");
-            if (string.IsNullOrEmpty(url))
-            {
-                r.Status = "ES_URL_MISSING";
-                r.Description = "Elasticsearch env variable [ES_URL] is not configured";
+            var result = await repository!.GetConfigurationByType("OrgShortName");
 
+            if (result == null)
+            {
+                r.Status = "NOT_FOUND";
+                r.Description = "Organization short name not found for the specified organization";
                 return r;
             }
 
-            var user = Environment.GetEnvironmentVariable("ES_USER");
-            if (string.IsNullOrEmpty(user))
-            {
-                r.Status = "ES_USER_MISSING";
-                r.Description = "Elasticsearch env variable [ES_USER] is not configured";
+            r.Configuration = result;
 
-                return r;
-            }
+            return r;
+        }
 
-            var password = Environment.GetEnvironmentVariable("ES_PASSWORD");
-            if (string.IsNullOrEmpty(password))
-            {
-                r.Status = "ES_PASSWORD_MISSING";
-                r.Description = "Elasticsearch env variable [ES_PASSWORD] is not configured";
-
-                return r;
-            }
-
-            var indexPattern = Environment.GetEnvironmentVariable("ES_INDEX_PATTERN");
-            if (string.IsNullOrEmpty(indexPattern))
-            {
-                r.Status = "ES_INDEX_PATTERN_MISSING";
-                r.Description = "Elasticsearch env variable [ES_INDEX_PATTERN] is not configured";
-
-                return r;
-            }
-
-            var cfg = new MEsConfig()
-            {
-                ApiEndpoint = url,
-                User = user,
-                Password = password,
-                IndexPattern = indexPattern
+        public async Task<MVConfiguration> SetOrgShortName(string orgId, string shortName)
+        {
+            repository!.SetCustomOrgId(orgId);
+            
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Organization short name retrieved successfully"
             };
 
-            r.EsConfig = cfg;
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "OrgShortName",
+                ConfigValue = shortName
+            });
+
+            r.Configuration = c;
+
+            return r;
+        }
+
+
+        public async Task<MVConfiguration?> GetLogo(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Organization logo retrieved successfully"
+            };
+
+            var result = await repository!.GetConfigurationByType("Logo");
+
+            if (result == null)
+            {
+                r.Status = "NOT_FOUND";
+                r.Description = "Organization logo not found for the specified organization";
+                return r;
+            }
+
+            r.Configuration = result;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration> SetLogo(string orgId, string logoUrl)
+        {
+            repository!.SetCustomOrgId(orgId);
+            
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Logo retrieved successfully"
+            };
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "Logo",
+                ConfigValue = logoUrl
+            });
+
+            r.Configuration = c;
+
             return r;
         }
     }
