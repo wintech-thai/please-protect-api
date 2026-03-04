@@ -39,6 +39,7 @@ namespace Its.PleaseProtect.Api.Controllers
 
         [ExcludeFromCodeCoverage]
         [HttpGet]
+        [AllowAnonymous]
         [Route("org/{id}/action/GetLogo")]
         public async Task<IActionResult> GetLogo(string id)
         {
@@ -58,6 +59,7 @@ namespace Its.PleaseProtect.Api.Controllers
 
         [ExcludeFromCodeCoverage]
         [HttpGet]
+        [AllowAnonymous]
         [Route("org/{id}/action/GetOrgShortName")]
         public async Task<IActionResult> GetOrgShortName(string id)
         {
