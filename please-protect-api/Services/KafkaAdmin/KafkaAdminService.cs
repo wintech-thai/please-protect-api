@@ -276,53 +276,79 @@ namespace Its.PleaseProtect.Api.Services
         
         public async Task<object> GetTopicLagAsync(string topic)
         {
-            // 1. ดึง Metadata เพื่อหาว่า Topic นี้มี Partition อะไรบ้าง
-            var metadata = _admin.GetMetadata(topic, TimeSpan.FromSeconds(10));
-            var topicMetadata = metadata.Topics.FirstOrDefault(t => t.Topic == topic);
-            if (topicMetadata == null) return new List<object>();
-
-            // 2. ดึง High Watermarks ของทุก Partition ไว้ก่อน (ดึงครั้งเดียวใช้ได้กับทุก Group)
-            using var consumer = new ConsumerBuilder<Ignore, Ignore>(_consumerConfig).Build();
-            var watermarks = new Dictionary<int, long>();
-            foreach (var p in topicMetadata.Partitions)
+            try
             {
-                var hw = consumer.QueryWatermarkOffsets(new TopicPartition(topic, p.PartitionId), TimeSpan.FromSeconds(10));
-                watermarks[p.PartitionId] = hw.High;
-            }
-
-            // 3. ดึงรายชื่อ Groups ทั้งหมด
-            var groupsMetadata = _admin.ListGroups(TimeSpan.FromSeconds(10));
-            
-            // 4. เตรียม Request ดึง Offset ของทุก Group พร้อมกัน
-            var options = groupsMetadata.Select(g => new ConsumerGroupTopicPartitions(g.Group, null)).ToList();
-            var allGroupsOffsets = await _admin.ListConsumerGroupOffsetsAsync(options);
-
-            var result = new List<object>();
-
-            // 5. จับคู่ข้อมูล (Matching)
-            foreach (var groupReport in allGroupsOffsets)
-            {
-                // กรองเอาเฉพาะ Partition ที่เป็นของ Topic ที่เราสนใจ
-                var relevantPartitions = groupReport.Partitions.Where(p => p.Topic == topic);
-
-                foreach (var p in relevantPartitions)
+                // 1. ส่วนที่เป็น Sync: ดึง Metadata และ Watermarks 
+                // ใช้ Task.Run เฉพาะส่วนนี้เพื่อไม่ให้ block thread
+                var watermarkData = await Task.Run(() =>
                 {
-                    long high = watermarks.ContainsKey(p.Partition.Value) ? watermarks[p.Partition.Value] : 0;
-                    long committed = p.Offset.IsSpecial ? 0 : p.Offset.Value;
+                    var meta = _admin.GetMetadata(topic, TimeSpan.FromSeconds(10));
+                    var topicMeta = meta.Topics.FirstOrDefault(t => t.Topic == topic);
+                    
+                    if (topicMeta == null || topicMeta.Error.IsError) return null;
 
-                    result.Add(new
+                    var wms = new Dictionary<int, long>();
+                    using (var consumer = new ConsumerBuilder<Ignore, Ignore>(_consumerConfig).Build())
                     {
-                        group = groupReport.Group,
-                        topic,
-                        partition = p.Partition.Value,
-                        committedOffset = committed,
-                        latestOffset = high,
-                        lag = high - committed
-                    });
-                }
-            }
+                        foreach (var p in topicMeta.Partitions)
+                        {
+                            var hw = consumer.QueryWatermarkOffsets(new TopicPartition(topic, p.PartitionId), TimeSpan.FromSeconds(10));
+                            wms[p.PartitionId] = hw.High;
+                        }
+                    }
+                    return new { TopicMeta = topicMeta, Watermarks = wms };
+                });
 
-            return result;
+                if (watermarkData == null) return new List<object>();
+
+                // 2. ส่วนที่เป็น Sync: ดึงรายชื่อ Groups
+                var groupsMetadata = await Task.Run(() => _admin.ListGroups(TimeSpan.FromSeconds(10)));
+
+                // 3. ส่วนที่เป็น Async แท้: ดึง Offset แยกทีละ Group แบบ Parallel
+                var tasks = groupsMetadata.Select(async g =>
+                {
+                    try
+                    {
+                        var result = await _admin.ListConsumerGroupOffsetsAsync(new[] { 
+                            new ConsumerGroupTopicPartitions(g.Group, null) 
+                        });
+                        return result.FirstOrDefault();
+                    }
+                    catch { return null; }
+                });
+
+                var allGroupsOffsets = (await Task.WhenAll(tasks)).Where(r => r != null).ToList();
+
+                // 4. รวบรวมผลลัพธ์
+                var resultList = new List<object>();
+                foreach (var groupReport in allGroupsOffsets)
+                {
+                    var relevantPartitions = groupReport!.Partitions.Where(p => p.Topic == topic);
+                    foreach (var p in relevantPartitions)
+                    {
+                        long high = watermarkData.Watermarks.TryGetValue(p.Partition.Value, out var h) ? h : 0;
+                        long committed = p.Offset.IsSpecial ? 0 : p.Offset.Value;
+                        long lag = high - committed;
+
+                        resultList.Add(new
+                        {
+                            group = groupReport.Group,
+                            topic,
+                            partition = p.Partition.Value,
+                            committedOffset = committed,
+                            latestOffset = high,
+                            lag = lag < 0 ? 0 : lag
+                        });
+                    }
+                }
+
+                return resultList;
+            }
+            catch (Exception ex)
+            {
+                return new { error = ex.Message };
+            }
         }
+
     }
 }
