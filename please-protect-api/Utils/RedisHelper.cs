@@ -64,12 +64,9 @@ namespace Its.PleaseProtect.Api.Utils
             await _db.StringSetAsync(key, json, expiry);
         }
 
-        public async Task SetObjectNoEscapeAsync<T>(string key, T obj, TimeSpan? expiry = null)
+        public async Task SetStringAsync(string key, string value, TimeSpan? expiry = null)
         {
-            var json = JsonSerializer.Serialize(obj, 
-                new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }
-            );
-            await _db.StringSetAsync(key, json, expiry);
+            await _db.StringSetAsync(key, value, expiry);
         }
 
         public async Task<T?> GetObjectAsync<T>(string key)
