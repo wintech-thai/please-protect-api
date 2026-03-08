@@ -64,6 +64,11 @@ namespace Its.PleaseProtect.Api.Utils
             await _db.StringSetAsync(key, json, expiry);
         }
 
+        public async Task SetStringAsync(string key, string value, TimeSpan? expiry = null)
+        {
+            await _db.StringSetAsync(key, value, expiry);
+        }
+
         public async Task<T?> GetObjectAsync<T>(string key)
         {
             var value = await _db.StringGetAsync(key);

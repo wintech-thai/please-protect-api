@@ -307,7 +307,7 @@ namespace Its.PleaseProtect.Api.Services
                     keysFromDb.Add(cacheKey, "");
 
                     //Load this to Redis
-                    _ = _redis.SetObjectAsync(cacheKey, subnetName);
+                    _ = _redis.SetStringAsync(cacheKey, subnetName);
 
                     Log.Information($"Cached [{seq}] [{cacheKey}] with value [{subnetName}]");
                 }
