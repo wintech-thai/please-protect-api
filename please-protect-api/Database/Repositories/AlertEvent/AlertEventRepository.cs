@@ -118,6 +118,16 @@ namespace Its.PleaseProtect.Api.Database.Repositories
                 pd = pd.And(severityPd);
             }
 
+            if (param.FromDate != null)
+            {
+                pd = pd.And(p => p.CreatedDate >= param.FromDate);
+            }
+
+            if (param.ToDate != null)
+            {
+                pd = pd.And(p => p.CreatedDate <= param.ToDate);
+            }
+
             return pd;
         }
     }
