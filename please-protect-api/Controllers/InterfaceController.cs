@@ -24,7 +24,7 @@ namespace Its.PleaseProtect.Api.Controllers
         public async Task<IActionResult> GetInterfaces(string id)
         {
             // GET /interfaces
-            var response = await _ifManagerClient.GetAsync("interfaces");
+            var response = await _ifManagerClient.GetAsync("interfaces/all");
             return await HandleResponse(response);
         }
 
