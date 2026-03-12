@@ -75,5 +75,24 @@ namespace Its.PleaseProtect.Api.Controllers
             var result = await svc.SetOrgShortName(id, cfg.ConfigValue!);
             return Ok(result);
         }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("org/{id}/action/GetOrgDescription")]
+        public async Task<IActionResult> GetOrgDescription(string id)
+        {
+            var result = await svc.GetOrgDescription(id);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/SetOrgDescription")]
+        public async Task<IActionResult> SetOrgDescription(string id, [FromBody] MConfiguration cfg)
+        {
+            var result = await svc.SetOrgDescription(id, cfg.ConfigValue!);
+            return Ok(result);
+        }
     }
 }

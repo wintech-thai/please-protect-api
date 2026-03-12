@@ -12,18 +12,18 @@ load_env("./.env")
 
 orgId = ENV['API_ORG']
 
-apiUrl = "api/AlertEvent/org/#{orgId}/action/GetAlertEvents"
+apiUrl = "api/Configuration/org/#{orgId}/action/SetOrgDescription"
 param = {
-  FullTextSearch: "Memory",
-  FromDate: "2026-03-10T05:00:00Z",
-  ToDate: "2026-03-10T23:59:59Z",
+  ConfigValue: "Royal Thai Armed Forces|Cyber Security Center"
 }
 
 result = make_request(:post, apiUrl, param)
 json = result.to_json
 puts(json)
 
-apiUrl = "api/AlertEvent/org/#{orgId}/action/GetAlertEventCount"
-result = make_request(:post, apiUrl, param)
+apiUrl = "api/Configuration/org/#{orgId}/action/GetOrgDescription"
+param = nil
+
+result = make_request(:get, apiUrl, param)
 json = result.to_json
 puts(json)
