@@ -149,6 +149,14 @@ namespace Its.PleaseProtect.Api
                 c.Timeout = TimeSpan.FromSeconds(60);
             });
 
+            builder.Services.AddHttpClient("if-manager", c =>
+            {
+                var url = "http://interface-manager-service.pp-system.svc.cluster.local";
+
+                c.BaseAddress = new Uri(url);
+                c.Timeout = TimeSpan.FromSeconds(10);
+            });
+
             builder.Services.AddHttpClient("arkime-proxy")
                 .ConfigurePrimaryHttpMessageHandler(() =>
                 {
