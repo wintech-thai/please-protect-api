@@ -17,9 +17,9 @@ param = {
   ConfigValue: "Royal Thai Armed Forces|Cyber Security Center"
 }
 
-#result = make_request(:post, apiUrl, param)
-#json = result.to_json
-#puts(json)
+result = make_request(:post, apiUrl, param)
+json = result.to_json
+puts(json)
 
 apiUrl = "api/Configuration/org/#{orgId}/action/GetOrgDescription"
 param = nil
