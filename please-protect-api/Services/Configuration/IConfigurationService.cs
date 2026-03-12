@@ -11,6 +11,9 @@ namespace Its.PleaseProtect.Api.Services
         public Task<MVConfiguration?> GetOrgShortName(string orgId);
         public Task<MVConfiguration> SetOrgShortName(string orgId, string shortName);
 
+        public Task<MVConfiguration?> GetOrgDescription(string orgId);
+        public Task<MVConfiguration> SetOrgDescription(string orgId, string description);
+
         public Task<MVConfiguration?> GetLogo(string orgId);
         public Task<MVConfiguration> SetLogo(string orgId, string logoUrl);
     }

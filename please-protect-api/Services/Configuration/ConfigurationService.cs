@@ -102,6 +102,50 @@ namespace Its.PleaseProtect.Api.Services
             return r;
         }
 
+        public async Task<MVConfiguration?> GetOrgDescription(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Organization description retrieved successfully"
+            };
+
+            var result = await repository!.GetConfigurationByType("OrgDescription");
+
+            if (result == null)
+            {
+                r.Status = "NOT_FOUND";
+                r.Description = "Organization description not found for the specified organization";
+                return r;
+            }
+
+            r.Configuration = result;
+
+            return r;
+        }
+        
+        public async Task<MVConfiguration> SetOrgDescription(string orgId, string description)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Organization description updated successfully"
+            };
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "OrgDescription",
+                ConfigValue = description
+            });
+
+            r.Configuration = c;
+
+            return r;
+        }
 
         public async Task<MVConfiguration?> GetLogo(string orgId)
         {
