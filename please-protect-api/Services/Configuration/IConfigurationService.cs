@@ -16,5 +16,13 @@ namespace Its.PleaseProtect.Api.Services
 
         public Task<MVConfiguration?> GetLogo(string orgId);
         public Task<MVConfiguration> SetLogo(string orgId, string logoUrl);
+
+
+        public Task<MVConfiguration?> GetCloudUrl(string orgId);
+        public Task<MVConfiguration> SetCloudUrl(string orgId, string cloudUrl);
+        public Task<MVConfiguration?> GetCloudConnectKey(string orgId);
+        public Task<MVConfiguration> SetCloudConnectKey(string orgId, string cloudConnectKey);
+        public Task<MVConfiguration?> GetCloudConnectFlag(string orgId);
+        public Task<MVConfiguration> SetCloudConnectFlag(string orgId, string cloudConnectFlag);
     }
 }
