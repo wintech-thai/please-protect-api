@@ -94,5 +94,63 @@ namespace Its.PleaseProtect.Api.Controllers
             var result = await svc.SetOrgDescription(id, cfg.ConfigValue!);
             return Ok(result);
         }
+
+        // Cloud Connect related endpoints
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("org/{id}/action/GetCloudUrl")]
+        public async Task<IActionResult> GetCloudUrl(string id)
+        {
+            var result = await svc.GetCloudUrl(id);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/SetCloudUrl")]
+        public async Task<IActionResult> SetCloudUrl(string id, [FromBody] MConfiguration cfg)
+        {
+            var result = await svc.SetCloudUrl(id, cfg.ConfigValue!);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("org/{id}/action/GetCloudConnectKey")]
+        public async Task<IActionResult> GetCloudConnectKey(string id)
+        {
+            var result = await svc.GetCloudConnectKey(id);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/SetCloudConnectKey")]
+        public async Task<IActionResult> SetCloudConnectKey(string id, [FromBody] MConfiguration cfg)
+        {
+            var result = await svc.SetCloudConnectKey(id, cfg.ConfigValue!);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("org/{id}/action/GetCloudConnectFlag")]
+        public async Task<IActionResult> GetCloudConnectFlag(string id)
+        {
+            var result = await svc.GetCloudConnectFlag(id);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/SetCloudConnectFlag")]
+        public async Task<IActionResult> SetCloudConnectFlag(string id, [FromBody] MConfiguration cfg)
+        {
+            var result = await svc.SetCloudConnectFlag(id, cfg.ConfigValue!);
+            return Ok(result);
+        }
     }
 }

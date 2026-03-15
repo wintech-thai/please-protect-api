@@ -191,5 +191,140 @@ namespace Its.PleaseProtect.Api.Services
 
             return r;
         }
+
+        public async Task<MVConfiguration?> GetCloudUrl(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Cloud URL retrieved successfully"
+            };
+
+            var result = await repository!.GetConfigurationByType("CloudUrl");
+
+            if (result == null)
+            {
+                r.Status = "NOT_FOUND";
+                r.Description = "Cloud URL not found for the specified organization";
+                return r;
+            }
+
+            r.Configuration = result;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration> SetCloudUrl(string orgId, string cloudUrl)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Cloud URL updated successfully"
+            };
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "CloudUrl",
+                ConfigValue = cloudUrl
+            });
+
+            r.Configuration = c;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration?> GetCloudConnectKey(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Cloud connect key retrieved successfully"
+            };
+
+            var result = await repository!.GetConfigurationByType("CloudConnectKey");
+
+            if (result == null)
+            {
+                r.Status = "NOT_FOUND";
+                r.Description = "Cloud connect key not found for the specified organization";
+                return r;
+            }
+
+            r.Configuration = result;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration> SetCloudConnectKey(string orgId, string cloudConnectKey)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Cloud connect key updated successfully"
+            };
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "CloudConnectKey",
+                ConfigValue = cloudConnectKey
+            });
+
+            r.Configuration = c;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration?> GetCloudConnectFlag(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Cloud connect flag retrieved successfully"
+            };
+
+            var result = await repository!.GetConfigurationByType("CloudConnectFlag");
+
+            if (result == null)
+            {
+                r.Status = "NOT_FOUND";
+                r.Description = "Cloud connect flag not found for the specified organization";
+                return r;
+            }
+
+            r.Configuration = result;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration> SetCloudConnectFlag(string orgId, string cloudConnectFlag)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Cloud connect flag updated successfully"
+            };
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "CloudConnectFlag",
+                ConfigValue = cloudConnectFlag.ToString()
+            });
+
+            r.Configuration = c;
+
+            return r;
+        }
     }
 }
