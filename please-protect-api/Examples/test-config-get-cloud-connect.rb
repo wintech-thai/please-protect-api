@@ -11,10 +11,11 @@ $stdout.sync = true
 load_env("./.env")
 
 orgId = ENV['API_ORG']
-apiName = "SetCloudConnectKey"
-configValue = "#{apiName}:value"
+apiName1 = "SetCloudConnectKey" #SetCloudConnectKey, SetCloudUrl
+apiName2 = "GetCloudConnectKey" #GetCloudConnectKey, GetCloudUrl
+configValue = "#{apiName1}:value"
 
-apiUrl = "api/Configuration/org/#{orgId}/action/#{apiName}"
+apiUrl = "api/Configuration/org/#{orgId}/action/#{apiName1}"
 param = {
   ConfigValue: configValue
 }
@@ -23,7 +24,7 @@ result = make_request(:post, apiUrl, param)
 json = result.to_json
 puts(json)
 
-apiUrl = "api/Configuration/org/#{orgId}/action/#{apiName}"
+apiUrl = "api/Configuration/org/#{orgId}/action/#{apiName2}"
 param = nil
 
 result = make_request(:get, apiUrl, param)

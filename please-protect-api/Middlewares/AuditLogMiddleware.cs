@@ -101,6 +101,7 @@ namespace Its.PleaseProtect.Api.AuditLogs
             // === Build log JSON ===
             var logObject = new AuditLog()
             {
+                AuditType = "API",
                 Host = host,
                 HttpMethod = method,
                 StatusCode = statusCode,
