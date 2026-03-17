@@ -117,7 +117,6 @@ namespace Its.PleaseProtect.Api.Controllers
 
         [ExcludeFromCodeCoverage]
         [HttpGet]
-        [AllowAnonymous]
         [Route("org/{id}/action/GetCloudConnectKey")]
         public async Task<IActionResult> GetCloudConnectKey(string id)
         {

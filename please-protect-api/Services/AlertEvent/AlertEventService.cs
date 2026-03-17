@@ -4,6 +4,7 @@ using Its.PleaseProtect.Api.ViewsModels;
 using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
 using System.Text.Json;
+using Serilog;
 
 namespace Its.PleaseProtect.Api.Services
 {
@@ -63,12 +64,28 @@ namespace Its.PleaseProtect.Api.Services
             var channels = await _alertChannelSvc.GetAlertChannels(orgId, vm);
             foreach (var channel in channels)
             {
+                if (channel.Status != "Enabled")
+                {
+                    Log.Information($"Skipping channel: [{channel.ChannelName}], status is [{channel.Status}]");
+                    continue;
+                }
+
                 var channelType = channel.Type!.ToLower();
                 if (channelType == "discord")
                 {
                     var url = channel.DiscordWebhookUrl!;
                     var discordNotifier = new DiscordNotifier(new HttpClient(), url);
-                    await discordNotifier.SendAsync(alertEvent!);
+
+                    try
+                    {
+                        await discordNotifier.SendAsync(alertEvent!);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"Error sending Discord alert. Channel: [{channel.ChannelName}], Url: [{url}]");
+                        Log.Error(ex.Message);
+                        // ไม่ต้อง throw → loop จะไปต่อ
+                    }
                 }
             }
 
