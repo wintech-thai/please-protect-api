@@ -11,9 +11,9 @@ $stdout.sync = true
 load_env("./.env")
 
 orgId = ENV['API_ORG']
-apiName1 = "SetCloudConnectKey" #SetCloudConnectKey, SetCloudUrl
-apiName2 = "GetCloudConnectKey" #GetCloudConnectKey, GetCloudUrl
-configValue = "#{apiName1}:value"
+apiName1 = "SetCloudConnectFlag" #SetCloudConnectKey, SetCloudUrl, SetCloudConnectFlag
+apiName2 = "GetCloudConnectFlag" #GetCloudConnectKey, GetCloudUrl, GetCloudConnectFlag
+configValue = "false" #"https://api-dev.please-protect.com/api/Agent/org/rtarf/action/Heartbeat"
 
 apiUrl = "api/Configuration/org/#{orgId}/action/#{apiName1}"
 param = {
