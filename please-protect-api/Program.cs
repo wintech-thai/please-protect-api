@@ -87,6 +87,7 @@ namespace Its.PleaseProtect.Api
             builder.Services.AddScoped<IAlertEventService, AlertEventService>();
             builder.Services.AddScoped<IAlertChannelService, AlertChannelService>();
             builder.Services.AddScoped<IKafkaAdminService, KafkaAdminService>();
+            builder.Services.AddScoped<IApplicationService, ApplicationService>();
 
 
             builder.Services.AddTransient<IAuthorizationHandler, GenericRbacHandler>();
