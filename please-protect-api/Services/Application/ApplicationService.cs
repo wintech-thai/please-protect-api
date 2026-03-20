@@ -64,6 +64,7 @@ namespace Its.PleaseProtect.Api.Services
                         var data = deserializer.Deserialize<Dictionary<object, object>>(yaml);
 
                         var repoUrl = GetValue(data, "spec", "template", "spec", "source", "repoURL")?.ToString();
+                        var branch = GetValue(data, "spec", "template", "spec", "source", "targetRevision")?.ToString();
                         var path = GetValue(data, "spec", "template", "spec", "source", "path")?.ToString();
                         var ns = GetValue(data, "spec", "template", "spec", "destination", "namespace")?.ToString();
 
@@ -73,7 +74,8 @@ namespace Its.PleaseProtect.Api.Services
                             AppName = Path.GetFileNameWithoutExtension(file),
                             RepoUrl = repoUrl,
                             Path = path,
-                            Namespace = ns
+                            Namespace = ns,
+                            Branch = branch,
                         });
                     }
                     catch

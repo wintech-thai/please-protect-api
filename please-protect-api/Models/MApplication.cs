@@ -30,6 +30,9 @@ namespace Its.PleaseProtect.Api.Models
         [Column("path")]
         public string? Path { get; set; }
 
+        [Column("branch")]
+        public string? Branch { get; set; }
+
         public MApplication()
         {
         }
