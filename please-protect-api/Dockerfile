@@ -21,12 +21,16 @@ RUN dotnet publish please-protect-api/please-protect-api.csproj -c release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
 RUN apt-get -y update \
-    && apt-get -y install --no-install-recommends curl \
-    && apt-get clean
+    && apt-get -y install --no-install-recommends curl git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=build /app .
 RUN ls -lrt
+
+RUN git config --system user.email "bot@dev-system.local" \
+ && git config --system user.name "Git Bot"
 
 RUN addgroup --group dotnet --gid 2000 \
 && adduser \    
