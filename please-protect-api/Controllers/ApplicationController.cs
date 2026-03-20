@@ -21,9 +21,9 @@ namespace Its.PleaseProtect.Api.Controllers
         [ExcludeFromCodeCoverage]
         [HttpGet]
         [Route("org/{id}/action/GetApplications")]
-        public IActionResult GetApplications(string id)
+        public async Task<IActionResult> GetApplications(string id)
         {
-            var result = svc.GetApplications(id);
+            var result = await svc.GetApplications(id);
             return Ok(result);
         }
     }
