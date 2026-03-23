@@ -121,20 +121,20 @@ Console.WriteLine($"DEBUG1 ==> [{fullPath}]");
                         }
 
                         // อ่านไฟล์แล้ว return
-                        git.Cleanup();
+                        //git.Cleanup();
                         return await File.ReadAllTextAsync(fullPath);
                     }
                     catch
                     {
                         // กันกรณี path เพี้ยนหรือ permission
-                        git.Cleanup();
+                        //git.Cleanup();
                         return "ERR:VALUE_FILE_NOTFOUND";
                     }
                 }
             }
 
             // หา appName ไม่เจอ
-            git.Cleanup();
+            //git.Cleanup();
             return "ERR:APP_VALUE_NOTFOUND";
         }
     }
