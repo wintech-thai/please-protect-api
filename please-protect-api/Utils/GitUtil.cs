@@ -35,7 +35,7 @@ public class GitUtil
         return fullPath;
     }
 
-    private async Task RunGitAsync(string args)
+    public async Task RunGitAsync(string args)
     {
         var psi = new ProcessStartInfo
         {

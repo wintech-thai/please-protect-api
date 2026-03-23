@@ -1,5 +1,6 @@
 using Its.PleaseProtect.Api.Models;
 using Its.PleaseProtect.Api.Utils;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
 namespace Its.PleaseProtect.Api.Services
@@ -246,6 +247,59 @@ namespace Its.PleaseProtect.Api.Services
             var app = await GetFileContent(orgId, git, appName, "values-local.yaml", apps, true);
 
             return app.Content!;
+        }
+
+        public async Task<string> SaveDraftAppCustomConfig(string orgId, GitUtil git, string appName, string content)
+        {
+            var customValueFile = "values-local.yaml";
+
+            var apps = await GetApplicationsDraft(orgId, git, false);
+            var app = await GetFileContent(orgId, git, appName, customValueFile, apps, false);
+
+            var fullPath = Path.Combine(app.Directory!, app.Path!, customValueFile);
+            var previousContent = app.Content;
+
+            // 1. ✅ validate YAML
+            try
+            {
+                var deserializer = new DeserializerBuilder().Build();
+                using var reader = new StringReader(content);
+                deserializer.Deserialize<object>(reader);
+            }
+            catch (YamlException ex)
+            {
+                return $"ERR:INVALID_YAML - {ex.Message}";
+            }
+            catch
+            {
+                return "ERR:INVALID_YAML";
+            }
+
+            try
+            {
+                // 2. ✅ เขียนไฟล์ (overwrite)
+                await File.WriteAllTextAsync(fullPath, content);
+
+                // 3. ✅ add + commit + push
+                await git.RunGitAsync($"add {customValueFile}");
+                await git.RunGitAsync($"commit -m \"Update {appName} custom config\"");
+                await git.PushAsync(dataPlaneDraftBranch);
+            }
+            catch
+            {
+                // 🔥 rollback ถ้า fail
+                if (previousContent != null)
+                {
+                    await File.WriteAllTextAsync(fullPath, previousContent);
+                }
+
+                return "ERR:SAVE_FAILED";
+            }
+
+            // 4. ✅ อ่านไฟล์กลับมายืนยันว่าเป็นของใหม่จริง
+            var savedContent = await File.ReadAllTextAsync(fullPath);
+
+            return savedContent;
         }
     }
 }
