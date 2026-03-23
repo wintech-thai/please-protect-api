@@ -10,5 +10,6 @@ namespace Its.PleaseProtect.Api.Services
         public Task<string> GetCurrentAppCustomConfig(string orgId, GitUtil git, string appName);
         public Task<string> GetDraftAppCustomConfig(string orgId, GitUtil git, string appName);
         public Task<string> SaveDraftAppCustomConfig(string orgId, GitUtil git, string appName, string content);
+        public Task<string> MergeDraftAppCustomConfig(string orgId, GitUtil git, string appName);
     }
 }

@@ -79,5 +79,17 @@ namespace Its.PleaseProtect.Api.Controllers
             var result = await svc.SaveDraftAppCustomConfig(id, git, appName, content);
             return Ok(result);
         }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/MergeDraftAppCustomConfig/{appName}")]
+        public async Task<IActionResult> MergeDraftAppCustomConfig(string id, string appName)
+        {
+            var workingDir = Path.Combine(gitSyncBaseDir, $"data-plane-{Guid.NewGuid()}");
+            var git = new GitUtil(workingDir);
+
+            var result = await svc.MergeDraftAppCustomConfig(id, git, appName);
+            return Ok(result);
+        }
     }
 }

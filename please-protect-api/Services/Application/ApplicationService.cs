@@ -302,5 +302,45 @@ namespace Its.PleaseProtect.Api.Services
 
             return savedContent;
         }
+
+        public async Task<string> MergeDraftAppCustomConfig(string orgId, GitUtil git, string appName)
+        {
+            var draftBranch = dataPlaneDraftBranch; // เช่น "draft"
+
+            try
+            {
+                // 1. ✅ clone repo ใหม่ (clean state)
+                await git.CloneAsync(dataPlaneUrl);
+
+                // 3. ✅ fetch branch ล่าสุด
+                await git.RunGitAsync("fetch --all");
+
+                // 4. ✅ checkout main + pull
+                await git.RunGitAsync($"checkout {dataPlaneBranch}");
+                await git.PullAsync(dataPlaneBranch);
+
+                // 5. ✅ ensure draft ล่าสุด
+                await git.RunGitAsync($"checkout {draftBranch}");
+                await git.PullAsync(draftBranch);
+
+                // 6. ✅ merge draft -> main
+                await git.RunGitAsync($"checkout {dataPlaneBranch}");
+                await git.RunGitAsync($"merge {draftBranch}");
+
+                // 7. ✅ push main
+                await git.PushAsync(dataPlaneBranch);
+
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                return $"ERR:MERGE_FAILED - {ex.Message}";
+            }
+            finally
+            {
+                // 8. ✅ cleanup temp dir
+                git.Cleanup();
+            }
+        }
     }
 }
