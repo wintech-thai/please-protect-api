@@ -257,6 +257,7 @@ namespace Its.PleaseProtect.Api.Services
             var app = await GetFileContent(orgId, git, appName, customValueFile, apps, false);
 
             var fullPath = Path.Combine(app.Directory!, app.Path!, customValueFile);
+            var relativePath = Path.Combine(app.Path!, customValueFile);
             var previousContent = app.Content;
 
             // 1. ✅ validate YAML
@@ -281,7 +282,7 @@ namespace Its.PleaseProtect.Api.Services
                 await File.WriteAllTextAsync(fullPath, content);
 
                 // 3. ✅ add + commit + push
-                await git.RunGitAsync($"add {customValueFile}");
+                await git.RunGitAsync($"add {relativePath}");
                 await git.RunGitAsync($"commit -m \"Update {appName} custom config\"");
                 await git.PushAsync(dataPlaneDraftBranch);
             }
@@ -293,7 +294,7 @@ namespace Its.PleaseProtect.Api.Services
                     await File.WriteAllTextAsync(fullPath, previousContent);
                 }
 
-                return $"ERR:SAVE_FAILED:{e.Message}";
+                return $"ERR:SAVE_FAILED:{e.Message}:{relativePath}";
             }
 
             // 4. ✅ อ่านไฟล์กลับมายืนยันว่าเป็นของใหม่จริง
