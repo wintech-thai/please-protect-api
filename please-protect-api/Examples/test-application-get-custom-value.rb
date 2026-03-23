@@ -13,7 +13,7 @@ load_env("./.env")
 orgId = ENV['API_ORG']
 appName = 'app-censor-suricata'
 
-apiUrl = "api/Application/org/#{orgId}/action/GetCurrentAppDefaultConfig/#{appName}"
+apiUrl = "api/Application/org/#{orgId}/action/GetCurrentAppCustomConfig/#{appName}"
 param = nil
 result = make_request(:get, apiUrl, param)
 

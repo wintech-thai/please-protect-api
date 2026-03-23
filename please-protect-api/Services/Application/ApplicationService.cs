@@ -101,7 +101,8 @@ namespace Its.PleaseProtect.Api.Services
                 }
             }
         }
-        public async Task<string> GetCurrentAppDefaultConfig(string orgId, GitUtil git, string appName)
+
+        private async Task<string> GetFileContent(string orgId, GitUtil git, string appName, string fileName)
         {
             var apps = await GetApplications(orgId, git, false);
 
@@ -112,8 +113,8 @@ namespace Its.PleaseProtect.Api.Services
                     try
                     {
                         // รวม path: base directory + app path + values.yaml
-                        var fullPath = Path.Combine(app.Directory!, app.Path!, "values.yaml");
-Console.WriteLine($"DEBUG1 ==> [{fullPath}]");
+                        var fullPath = Path.Combine(app.Directory!, app.Path!, fileName);
+//Console.WriteLine($"DEBUG1 ==> [{fullPath}]");
                         // เช็คว่าไฟล์มีอยู่ไหม
                         if (!File.Exists(fullPath))
                         {
@@ -121,21 +122,31 @@ Console.WriteLine($"DEBUG1 ==> [{fullPath}]");
                         }
 
                         // อ่านไฟล์แล้ว return
-                        //git.Cleanup();
                         return await File.ReadAllTextAsync(fullPath);
                     }
                     catch
                     {
                         // กันกรณี path เพี้ยนหรือ permission
-                        //git.Cleanup();
                         return "ERR:VALUE_FILE_NOTFOUND";
                     }
                 }
             }
 
             // หา appName ไม่เจอ
-            //git.Cleanup();
+            git.Cleanup();
             return "ERR:APP_VALUE_NOTFOUND";
+        }
+
+        public async Task<string> GetCurrentAppDefaultConfig(string orgId, GitUtil git, string appName)
+        {
+            var result = await GetFileContent(orgId, git, appName, "values.yaml");
+            return result;
+        }
+
+        public async Task<string> GetCurrentAppCustomConfig(string orgId, GitUtil git, string appName)
+        {
+            var result = await GetFileContent(orgId, git, appName, "values-local.yaml");
+            return result;
         }
     }
 }
