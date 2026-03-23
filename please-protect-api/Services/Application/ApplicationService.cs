@@ -8,7 +8,6 @@ namespace Its.PleaseProtect.Api.Services
     {
         private readonly string dataPlaneUrl = "http://gitea-http.gitea.svc.cluster.local:3000/local/data-plane.git";
         private readonly string dataPlaneBranch = "main";
-        private readonly string gitSyncBaseDir = "/tmp/git";
 
         public ApplicationService() : base()
         {
@@ -31,10 +30,9 @@ namespace Its.PleaseProtect.Api.Services
             return current;
         }
 
-        public async Task<List<MApplication>> GetApplications(string orgId)
+        public async Task<List<MApplication>> GetApplications(string orgId, GitUtil git, bool withCleanup)
         {
-            var workingDir = Path.Combine(gitSyncBaseDir, $"data-plane-{Guid.NewGuid()}");
-            var git = new GitUtil(workingDir);
+            var workingDir = git.GetWorkingDir();
 
             var result = new List<MApplication>();
             var deserializer = new DeserializerBuilder().Build();
@@ -76,6 +74,7 @@ namespace Its.PleaseProtect.Api.Services
                             Path = path,
                             Namespace = ns,
                             Branch = branch,
+                            Directory = workingDir,
                         });
                     }
                     catch
@@ -91,7 +90,10 @@ namespace Its.PleaseProtect.Api.Services
             {
                 try
                 {
-                    git.Cleanup();
+                    if (withCleanup)
+                    {
+                        git.Cleanup();
+                    }
                 }
                 catch
                 {
@@ -99,40 +101,41 @@ namespace Its.PleaseProtect.Api.Services
                 }
             }
         }
-
-        public async Task<List<MApplication>> GetApplications2(string orgId)
+        public async Task<string> GetCurrentAppDefaultConfig(string orgId, GitUtil git, string appName)
         {
-            // ✅ unique working dir
-            var workingDir = Path.Combine(gitSyncBaseDir, $"data-plane-{Guid.NewGuid()}");
-            var git = new GitUtil(workingDir);
+            var apps = await GetApplications(orgId, git, false);
 
-            try
+            foreach (var app in apps)
             {
-                await git.CloneAsync(dataPlaneUrl);
-                await git.PullAsync(dataPlaneBranch);
-
-                var appPath = Path.Combine(
-                    workingDir,
-                    "99-deployments",
-                    "applications"
-                );
-
-                if (!Directory.Exists(appPath))
-                    return new List<MApplication>();
-
-                var files = Directory.GetFiles(appPath, "*.yaml")
-                    .Concat(Directory.GetFiles(appPath, "*.yml"));
-
-                return files.Select(f => new MApplication
+                if (app.AppName == appName)
                 {
-                    OrgId = orgId,
-                    AppName = Path.GetFileNameWithoutExtension(f)
-                }).ToList();
+                    try
+                    {
+                        // รวม path: base directory + app path + values.yaml
+                        var fullPath = Path.Combine(app.Directory!, app.Path!, "values.yaml");
+
+                        // เช็คว่าไฟล์มีอยู่ไหม
+                        if (!File.Exists(fullPath))
+                        {
+                            return "ERR:VALUE_FILE_NOTFOUND";
+                        }
+
+                        // อ่านไฟล์แล้ว return
+                        git.Cleanup();
+                        return await File.ReadAllTextAsync(fullPath);
+                    }
+                    catch
+                    {
+                        // กันกรณี path เพี้ยนหรือ permission
+                        git.Cleanup();
+                        return "ERR:VALUE_FILE_NOTFOUND";
+                    }
+                }
             }
-            finally
-            {
-                git.Cleanup();
-            }
+
+            // หา appName ไม่เจอ
+            git.Cleanup();
+            return "ERR:APP_VALUE_NOTFOUND";
         }
     }
 }

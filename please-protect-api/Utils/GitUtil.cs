@@ -107,4 +107,9 @@ public class GitUtil
             Directory.Delete(_workingDir, true);
         }
     }
+
+    public string GetWorkingDir()
+    {
+        return _workingDir;
+    }
 }
