@@ -285,7 +285,7 @@ namespace Its.PleaseProtect.Api.Services
                 await git.RunGitAsync($"commit -m \"Update {appName} custom config\"");
                 await git.PushAsync(dataPlaneDraftBranch);
             }
-            catch
+            catch (Exception e)
             {
                 // 🔥 rollback ถ้า fail
                 if (previousContent != null)
@@ -293,7 +293,7 @@ namespace Its.PleaseProtect.Api.Services
                     await File.WriteAllTextAsync(fullPath, previousContent);
                 }
 
-                return "ERR:SAVE_FAILED";
+                return $"ERR:SAVE_FAILED:{e.Message}";
             }
 
             // 4. ✅ อ่านไฟล์กลับมายืนยันว่าเป็นของใหม่จริง

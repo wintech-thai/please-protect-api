@@ -11,10 +11,20 @@ $stdout.sync = true
 load_env("./.env")
 
 orgId = ENV['API_ORG']
-appName = 'app-censor-arkime'
+appName = 'app-censor-suricata'
 
 apiUrl = "api/Application/org/#{orgId}/action/SaveDraftAppCustomConfig/#{appName}"
-param = ''
+param = <<~YAML
+suricataEth0:
+  resources:
+    requests:
+      cpu: "600m"
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+YAML
+
 result = make_request(:post, apiUrl, param)
 
 #json = result.to_json
