@@ -11,7 +11,7 @@ $stdout.sync = true
 load_env("./.env")
 
 orgId = ENV['API_ORG']
-appName = 'app-censor-suricata'
+appName = 'app-censor-arkime'
 
 apiUrl = "api/Application/org/#{orgId}/action/GetCurrentAppCustomConfig/#{appName}"
 param = nil

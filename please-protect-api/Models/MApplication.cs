@@ -36,6 +36,9 @@ namespace Its.PleaseProtect.Api.Models
         [Column("directory")]
         public string? Directory { get; set; }
 
+        [Column("content")]
+        public string? Content { get; set; }
+
         public MApplication()
         {
         }

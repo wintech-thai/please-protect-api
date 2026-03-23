@@ -8,6 +8,7 @@ namespace Its.PleaseProtect.Api.Services
     {
         private readonly string dataPlaneUrl = "http://gitea-http.gitea.svc.cluster.local:3000/local/data-plane.git";
         private readonly string dataPlaneBranch = "main";
+         private readonly string dataPlaneDraftBranch = "draft";
 
         public ApplicationService() : base()
         {
@@ -102,9 +103,14 @@ namespace Its.PleaseProtect.Api.Services
             }
         }
 
-        private async Task<string> GetFileContent(string orgId, GitUtil git, string appName, string fileName)
+        private async Task<MApplication> GetFileContent(string orgId, 
+            GitUtil git, 
+            string appName, 
+            string fileName, 
+            List<MApplication> apps, 
+            bool withCleanup)
         {
-            var apps = await GetApplications(orgId, git, false);
+            //var apps = await GetApplications(orgId, git, false);
 
             foreach (var app in apps)
             {
@@ -118,35 +124,128 @@ namespace Its.PleaseProtect.Api.Services
                         // เช็คว่าไฟล์มีอยู่ไหม
                         if (!File.Exists(fullPath))
                         {
-                            return "ERR:VALUE_FILE_NOTFOUND";
+                            app.Content = "ERR:VALUE_FILE_NOTFOUND";
+                            return app;
                         }
 
                         // อ่านไฟล์แล้ว return
-                        return await File.ReadAllTextAsync(fullPath);
+                        app.Content = await File.ReadAllTextAsync(fullPath);
+                        return app;
                     }
                     catch
                     {
                         // กันกรณี path เพี้ยนหรือ permission
-                        return "ERR:VALUE_FILE_NOTFOUND";
+                        app.Content = "ERR:VALUE_FILE_NOTFOUND";
+                        return app;
                     }
                 }
             }
 
             // หา appName ไม่เจอ
-            git.Cleanup();
-            return "ERR:APP_VALUE_NOTFOUND";
+            if (withCleanup)
+            {
+                git.Cleanup();
+            }
+
+            var tmp = new MApplication()
+            {
+                Content = "ERR:APP_VALUE_NOTFOUND",
+            };
+
+            return tmp; 
         }
 
         public async Task<string> GetCurrentAppDefaultConfig(string orgId, GitUtil git, string appName)
         {
-            var result = await GetFileContent(orgId, git, appName, "values.yaml");
-            return result;
+            var apps = await GetApplications(orgId, git, false);
+            var app = await GetFileContent(orgId, git, appName, "values.yaml", apps, true);
+
+            return app.Content!;
         }
 
         public async Task<string> GetCurrentAppCustomConfig(string orgId, GitUtil git, string appName)
         {
-            var result = await GetFileContent(orgId, git, appName, "values-local.yaml");
-            return result;
+            var apps = await GetApplications(orgId, git, false);
+            var app = await GetFileContent(orgId, git, appName, "values-local.yaml", apps, true);
+
+            return app.Content!;
+        }
+
+        private async Task<List<MApplication>> GetApplicationsDraft(string orgId, GitUtil git, bool withCleanup)
+        {
+            var workingDir = git.GetWorkingDir();
+
+            var result = new List<MApplication>();
+            var deserializer = new DeserializerBuilder().Build();
+
+            try
+            {
+                await git.CloneWithBranchAsync(dataPlaneUrl, dataPlaneDraftBranch);
+                await git.PullAsync(dataPlaneDraftBranch);
+
+                var appPath = Path.Combine(workingDir, "99-deployments", "applications");
+
+                if (!Directory.Exists(appPath))
+                    return result;
+
+                var files = Directory.GetFiles(appPath, "*.yaml")
+                    .Concat(Directory.GetFiles(appPath, "*.yml"));
+
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        var yaml = await File.ReadAllTextAsync(file);
+
+                        var data = deserializer.Deserialize<Dictionary<object, object>>(yaml);
+
+                        var repoUrl = GetValue(data, "spec", "template", "spec", "source", "repoURL")?.ToString();
+                        var branch = GetValue(data, "spec", "template", "spec", "source", "targetRevision")?.ToString();
+                        var path = GetValue(data, "spec", "template", "spec", "source", "path")?.ToString();
+                        var ns = GetValue(data, "spec", "template", "spec", "destination", "namespace")?.ToString();
+
+                        result.Add(new MApplication
+                        {
+                            OrgId = orgId,
+                            AppName = Path.GetFileNameWithoutExtension(file),
+                            RepoUrl = repoUrl,
+                            Path = path,
+                            Namespace = ns,
+                            Branch = branch,
+                            Directory = workingDir,
+                        });
+                    }
+                    catch
+                    {
+                        // ข้ามไฟล์ที่ parse ไม่ได้
+                        continue;
+                    }
+                }
+
+                return result;
+            }
+            finally
+            {
+                try
+                {
+                    if (withCleanup)
+                    {
+                        git.Cleanup();
+                    }
+                }
+                catch
+                {
+                    // กัน cleanup fail แล้วกลบ error หลัก
+                }
+            }
+        }
+
+        public async Task<string> GetDraftAppCustomConfig(string orgId, GitUtil git, string appName)
+        {
+            var apps = await GetApplicationsDraft(orgId, git, false);
+            var app = await GetFileContent(orgId, git, appName, "values-local.yaml", apps, true);
+
+            return app.Content!;
         }
     }
 }

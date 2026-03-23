@@ -76,6 +76,54 @@ public class GitUtil
         return builder.Uri.ToString();
     }
 
+    private async Task<bool> RemoteBranchExists(string branch)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = $"ls-remote --heads origin {branch}",
+            WorkingDirectory = _workingDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+
+        using var process = Process.Start(psi)!;
+
+        var output = await process.StandardOutput.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        return !string.IsNullOrWhiteSpace(output);
+    }
+
+    public async Task CloneWithBranchAsync(string repoUrl, string branch)
+    {
+        var url = InjectCredential(repoUrl);
+
+        // 1. clone มาก่อน (default branch)
+        await RunGitAsync($"clone {url} .");
+
+        // 2. fetch ทุก branch
+        await RunGitAsync("fetch --all");
+
+        // 3. เช็คว่า remote branch มีไหม
+        var hasRemoteBranch = await RemoteBranchExists(branch);
+
+        if (hasRemoteBranch)
+        {
+            // 4. ถ้ามี → checkout จาก remote
+            await RunGitAsync($"checkout -b {branch} origin/{branch}");
+        }
+        else
+        {
+            // 5. ถ้าไม่มี → สร้าง branch ใหม่จาก current (default branch)
+            await RunGitAsync($"checkout -b {branch}");
+
+            // optional: push ขึ้น remote เลย
+            await RunGitAsync($"push -u origin {branch}");
+        }
+    }
+
     public async Task CloneAsync(string repoUrl)
     {
         var url = InjectCredential(repoUrl);
