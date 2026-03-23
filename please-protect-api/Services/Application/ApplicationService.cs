@@ -113,7 +113,7 @@ namespace Its.PleaseProtect.Api.Services
                     {
                         // รวม path: base directory + app path + values.yaml
                         var fullPath = Path.Combine(app.Directory!, app.Path!, "values.yaml");
-
+Console.WriteLine($"DEBUG1 ==> [{fullPath}]");
                         // เช็คว่าไฟล์มีอยู่ไหม
                         if (!File.Exists(fullPath))
                         {
