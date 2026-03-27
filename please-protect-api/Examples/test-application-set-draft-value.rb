@@ -18,7 +18,7 @@ param = <<~YAML
 suricataEth0:
   resources:
     requests:
-      cpu: "600m"
+      cpu: "700m"
       memory: 1Gi
     limits:
       cpu: "1"
