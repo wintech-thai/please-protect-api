@@ -117,6 +117,8 @@ Log.Information($"DEBUG E item count [{items.EnumerateArray().Count()}]");
                         if (!deleteResp.IsSuccessStatusCode)
                         {
                             var err = await deleteResp.Content.ReadAsStringAsync();
+                            Log.Error($"Failed to delete pod [{podName}] [{err}]");
+                            
                             throw new Exception($"Delete failed: {podName} -> {err}");
                         }
                     }
