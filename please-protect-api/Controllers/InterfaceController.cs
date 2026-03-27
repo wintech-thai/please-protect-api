@@ -57,7 +57,7 @@ namespace Its.PleaseProtect.Api.Controllers
 
                 var workloads = new List<KubeWorkload>
                 {
-                    new("censor-arkime", "daemonsets", "daemonset"),
+                    new("censor-arkime", "daemonsets", "censor-arkime-sensor"),
                     new("censor-zeek", "deployments", "zeek-eth0"),
                     new("censor-suricata", "statefulsets", "suricata-eth0")
                 };
@@ -71,7 +71,7 @@ Log.Information($"DEBUG B....");
 
                     if (!workloadResp.IsSuccessStatusCode)
                     {
-                        Log.Error($"Failed to get workload [{workloadResp.StatusCode}]");
+                        Log.Error($"Failed to get workload [{workloadUrl}] [{workloadResp.StatusCode}]");
                         throw new Exception($"Get workload failed: {w.Namespace}/{w.Name}");
                     }
 Log.Information($"DEBUG C....");
