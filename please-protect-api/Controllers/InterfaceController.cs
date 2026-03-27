@@ -70,7 +70,10 @@ Log.Information($"DEBUG B....");
                     var workloadResp = await _kubeClient.GetAsync(workloadUrl);
 
                     if (!workloadResp.IsSuccessStatusCode)
+                    {
+                        Log.Error($"Failed to get workload [{workloadResp.StatusCode}]");
                         throw new Exception($"Get workload failed: {w.Namespace}/{w.Name}");
+                    }
 Log.Information($"DEBUG C....");
                     var workloadJson = await workloadResp.Content.ReadAsStringAsync();
                     using var workloadDoc = JsonDocument.Parse(workloadJson);
