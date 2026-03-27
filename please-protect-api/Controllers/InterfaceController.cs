@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 
 namespace Its.PleaseProtect.Api.Controllers
 {
@@ -49,15 +50,11 @@ namespace Its.PleaseProtect.Api.Controllers
         {
             try
             {
-                // 1. อ่าน service account token
                 var token = await System.IO.File.ReadAllTextAsync("/var/run/secrets/kubernetes.io/serviceaccount/token");
 
-                // 2. set header (ใช้ client ที่มี BaseAddress อยู่แล้ว)
                 _kubeClient.DefaultRequestHeaders.Clear();
-                _kubeClient.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                _kubeClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-                // 3. define workloads (extend ได้ง่าย)
                 var workloads = new List<KubeWorkload>
                 {
                     new("censor-arkime", "daemonsets", "daemonset"),
@@ -65,39 +62,58 @@ namespace Its.PleaseProtect.Api.Controllers
                     new("censor-suricata", "statefulsets", "suricata-eth0")
                 };
 
-                // 4. restart ทีละ workload
                 foreach (var w in workloads)
                 {
-                    var url = $"/apis/apps/v1/namespaces/{w.Namespace}/{w.Type}/{w.Name}";
+                    // 1. get workload
+                    var workloadUrl = $"/apis/apps/v1/namespaces/{w.Namespace}/{w.Type}/{w.Name}";
+                    var workloadResp = await _kubeClient.GetAsync(workloadUrl);
 
-                    var patchObj = new
+                    if (!workloadResp.IsSuccessStatusCode)
+                        throw new Exception($"Get workload failed: {w.Namespace}/{w.Name}");
+
+                    var workloadJson = await workloadResp.Content.ReadAsStringAsync();
+                    using var workloadDoc = JsonDocument.Parse(workloadJson);
+
+                    var selector = workloadDoc.RootElement
+                        .GetProperty("spec")
+                        .GetProperty("selector")
+                        .GetProperty("matchLabels");
+
+                    // 2. build labelSelector string
+                    var labelList = new List<string>();
+                    foreach (var prop in selector.EnumerateObject())
                     {
-                        spec = new
+                        labelList.Add($"{prop.Name}={prop.Value.GetString()}");
+                    }
+
+                    var labelSelector = string.Join(",", labelList);
+
+                    // 3. list pods
+                    var listUrl = $"/api/v1/namespaces/{w.Namespace}/pods?labelSelector={Uri.EscapeDataString(labelSelector)}";
+                    var listResp = await _kubeClient.GetAsync(listUrl);
+
+                    if (!listResp.IsSuccessStatusCode)
+                        throw new Exception($"List pods failed: {w.Namespace}");
+
+                    var podJson = await listResp.Content.ReadAsStringAsync();
+                    using var podDoc = JsonDocument.Parse(podJson);
+
+                    var items = podDoc.RootElement.GetProperty("items");
+
+                    // 4. delete pods
+                    foreach (var pod in items.EnumerateArray())
+                    {
+                        var podName = pod.GetProperty("metadata").GetProperty("name").GetString();
+                        Log.Information($"Deleting pod [{podName}] from namespace [{w.Namespace}]...");
+
+                        var deleteUrl = $"/api/v1/namespaces/{w.Namespace}/pods/{podName}";
+                        var deleteResp = await _kubeClient.DeleteAsync(deleteUrl);
+
+                        if (!deleteResp.IsSuccessStatusCode)
                         {
-                            template = new
-                            {
-                                metadata = new
-                                {
-                                    annotations = new Dictionary<string, string>
-                                    {
-                                        ["kubectl.kubernetes.io/restartedAt"] = DateTime.UtcNow.ToString("o")
-                                    }
-                                }
-                            }
+                            var err = await deleteResp.Content.ReadAsStringAsync();
+                            throw new Exception($"Delete failed: {podName} -> {err}");
                         }
-                    };
-
-                    var json = JsonSerializer.Serialize(patchObj);
-                    var request = new HttpRequestMessage(new HttpMethod("PATCH"), url)
-                    {
-                        Content = new StringContent(json, Encoding.UTF8, "application/strategic-merge-patch+json")
-                    };
-
-                    var response = await _kubeClient.SendAsync(request);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var err = await response.Content.ReadAsStringAsync();
-                        throw new Exception($"Restart failed: {w.Namespace}/{w.Type}/{w.Name} -> {err}");
                     }
                 }
 
@@ -133,7 +149,7 @@ namespace Its.PleaseProtect.Api.Controllers
         {
             // POST /interfaces/{interfaceId}/disable
             var response = await _ifManagerClient.PostAsync($"interfaces/{interfaceId}/disable", null);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 _ = RestartSensors();
