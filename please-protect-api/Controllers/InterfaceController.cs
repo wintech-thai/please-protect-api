@@ -87,6 +87,7 @@ namespace Its.PleaseProtect.Api.Controllers
                     }
 
                     var labelSelector = string.Join(",", labelList);
+Log.Information($"DEBUG1 selector [{labelSelector}]");
 
                     // 3. list pods
                     var listUrl = $"/api/v1/namespaces/{w.Namespace}/pods?labelSelector={Uri.EscapeDataString(labelSelector)}";
@@ -99,12 +100,12 @@ namespace Its.PleaseProtect.Api.Controllers
                     using var podDoc = JsonDocument.Parse(podJson);
 
                     var items = podDoc.RootElement.GetProperty("items");
-
+Log.Information($"DEBUG2 item count [{items.EnumerateArray().Count()}]");
                     // 4. delete pods
                     foreach (var pod in items.EnumerateArray())
                     {
                         var podName = pod.GetProperty("metadata").GetProperty("name").GetString();
-                        Log.Information($"Deleting pod [{podName}] from namespace [{w.Namespace}]...");
+                        Log.Information($"DELETING pod [{podName}] from namespace [{w.Namespace}]...");
 
                         var deleteUrl = $"/api/v1/namespaces/{w.Namespace}/pods/{podName}";
                         var deleteResp = await _kubeClient.DeleteAsync(deleteUrl);
