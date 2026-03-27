@@ -61,10 +61,9 @@ namespace Its.PleaseProtect.Api.Controllers
                     new("censor-zeek", "deployments", "zeek-eth0"),
                     new("censor-suricata", "statefulsets", "suricata-eth0")
                 };
-Log.Information($"DEBUG A....");
+
                 foreach (var w in workloads)
                 {
-Log.Information($"DEBUG B....");
                     // 1. get workload
                     var workloadUrl = $"/apis/apps/v1/namespaces/{w.Namespace}/{w.Type}/{w.Name}";
                     var workloadResp = await _kubeClient.GetAsync(workloadUrl);
@@ -74,7 +73,7 @@ Log.Information($"DEBUG B....");
                         Log.Error($"Failed to get workload [{workloadUrl}] [{workloadResp.StatusCode}]");
                         throw new Exception($"Get workload failed: {w.Namespace}/{w.Name}");
                     }
-Log.Information($"DEBUG C....");
+
                     var workloadJson = await workloadResp.Content.ReadAsStringAsync();
                     using var workloadDoc = JsonDocument.Parse(workloadJson);
 
@@ -91,7 +90,6 @@ Log.Information($"DEBUG C....");
                     }
 
                     var labelSelector = string.Join(",", labelList);
-Log.Information($"DEBUG D selector [{labelSelector}]");
 
                     // 3. list pods
                     var listUrl = $"/api/v1/namespaces/{w.Namespace}/pods?labelSelector={Uri.EscapeDataString(labelSelector)}";
@@ -104,7 +102,7 @@ Log.Information($"DEBUG D selector [{labelSelector}]");
                     using var podDoc = JsonDocument.Parse(podJson);
 
                     var items = podDoc.RootElement.GetProperty("items");
-Log.Information($"DEBUG E item count [{items.EnumerateArray().Count()}]");
+
                     // 4. delete pods
                     foreach (var pod in items.EnumerateArray())
                     {
@@ -118,7 +116,7 @@ Log.Information($"DEBUG E item count [{items.EnumerateArray().Count()}]");
                         {
                             var err = await deleteResp.Content.ReadAsStringAsync();
                             Log.Error($"Failed to delete pod [{podName}] [{err}]");
-                            
+
                             throw new Exception($"Delete failed: {podName} -> {err}");
                         }
                     }
