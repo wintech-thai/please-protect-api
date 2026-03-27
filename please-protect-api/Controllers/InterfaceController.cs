@@ -61,7 +61,7 @@ namespace Its.PleaseProtect.Api.Controllers
                     new("censor-zeek", "deployments", "zeek-eth0"),
                     new("censor-suricata", "statefulsets", "suricata-eth0")
                 };
-
+Log.Information($"DEBUG0....");
                 foreach (var w in workloads)
                 {
                     // 1. get workload
