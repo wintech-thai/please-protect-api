@@ -101,5 +101,14 @@ namespace Its.PleaseProtect.Api.Controllers
             var result = await svc.UpgradeVersion(id, versionUpgrade);
             return Ok(result);
         }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetUpgradeHistory")]
+        public async Task<IActionResult> GetUpgradeHistory(string id)
+        {
+            var result = await svc.GetUpgradeHistory(id);
+            return Ok(result);
+        }
     }
 }

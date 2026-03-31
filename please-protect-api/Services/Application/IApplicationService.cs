@@ -14,5 +14,6 @@ namespace Its.PleaseProtect.Api.Services
         public Task<string> MergeDraftAppCustomConfig(string orgId, GitUtil git, string appName);
 
         public Task<MVJob> UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade);
+        public Task<IEnumerable<MJob>> GetUpgradeHistory(string orgId);
     }
 }

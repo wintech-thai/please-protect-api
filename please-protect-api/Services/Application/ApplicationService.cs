@@ -2,6 +2,7 @@ using System.Text.Json;
 using Its.PleaseProtect.Api.Models;
 using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
+using Its.PleaseProtect.Api.ViewsModels;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -17,6 +18,17 @@ namespace Its.PleaseProtect.Api.Services
         public ApplicationService(IJobService jobService) : base()
         {
             _jobService = jobService;
+        }
+
+        public async Task<IEnumerable<MJob>> GetUpgradeHistory(string orgId)
+        {
+            var vmJob = new VMJob()
+            {
+                JobType = "ApplicationUpgrade",
+            };
+
+            var jobs =  _jobService.GetJobs(orgId, vmJob);
+            return jobs;
         }
 
         public async Task<MVJob> UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade)
