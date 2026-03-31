@@ -1,5 +1,8 @@
+using System.Text.Json;
 using Its.PleaseProtect.Api.Models;
+using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
+using Its.PleaseProtect.Api.ViewsModels;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -9,10 +12,74 @@ namespace Its.PleaseProtect.Api.Services
     {
         private readonly string dataPlaneUrl = "http://gitea-http.gitea.svc.cluster.local:3000/local/data-plane.git";
         private readonly string dataPlaneBranch = "main";
-         private readonly string dataPlaneDraftBranch = "draft";
+        private readonly string dataPlaneDraftBranch = "draft";
+        private readonly IJobService _jobService;
 
-        public ApplicationService() : base()
+        public ApplicationService(IJobService jobService) : base()
         {
+            _jobService = jobService;
+        }
+
+        public async Task<IEnumerable<MJob>> GetUpgradeHistory(string orgId)
+        {
+            var vmJob = new VMJob()
+            {
+                JobType = "ApplicationUpgrade",
+            };
+
+            var jobs =  _jobService.GetJobs(orgId, vmJob);
+            return jobs;
+        }
+
+        public async Task<MVJob> UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade)
+        {
+            var r = new MVJob()
+            {
+                Status = "OK",
+                Description = "Success"
+            };
+
+            if (string.IsNullOrEmpty(versionUpgrade.FromVersion) || string.IsNullOrEmpty(versionUpgrade.ToVersion))
+            {
+                r.Status = "INVALID_PARAM";
+                r.Description = $"FromVersion and ToVersion are required";
+
+                return r;
+            }
+
+            if (versionUpgrade.FromVersion == versionUpgrade.ToVersion)
+            {
+                r.Status = "INVALID_PARAM";
+                r.Description = $"FromVersion and ToVersion cannot be the same";
+
+                return r;
+            }
+            
+            var job = CreateApplicationUpgradeJob(orgId, versionUpgrade);
+            return job;
+        }
+
+        private MVJob CreateApplicationUpgradeJob(string orgId, MVersionUpgrade versionUpgrade)
+        {
+            var job = new MJob()
+            {
+                Name = $"{Guid.NewGuid()}",
+                Description = "Application.CreateApplicationUpgradeJob()",
+                Type = "ApplicationUpgrade",
+                Status = "Pending",
+                Tags = $"fromVersion={versionUpgrade.FromVersion},toVersion={versionUpgrade.ToVersion}",
+
+                Parameters =
+                [
+                    new MKeyValue { Name = "FROM_VERSION", Value = versionUpgrade.FromVersion },
+                    new MKeyValue { Name = "TO_VERSION", Value = versionUpgrade.ToVersion },
+                    new MKeyValue { Name = "USER_NAME", Value = "system" },
+                ]
+            };
+
+            var result = _jobService.AddJob(orgId, job);
+
+            return result!;
         }
 
         private object? GetValue(Dictionary<object, object> dict, params string[] keys)

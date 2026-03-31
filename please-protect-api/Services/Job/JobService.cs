@@ -162,6 +162,14 @@ namespace Its.PleaseProtect.Api.Services
 
             foreach (var job in result)
             {
+                if (string.IsNullOrEmpty(job.Configuration))
+                {
+                    job.Configuration = "[]";
+                }
+                
+                var parameters = JsonSerializer.Deserialize<List<MKeyValue>>(job.Configuration!);
+                job.Parameters = parameters!;
+
                 job.Configuration = "";
             }
 
