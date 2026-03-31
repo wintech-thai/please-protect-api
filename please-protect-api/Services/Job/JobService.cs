@@ -160,10 +160,10 @@ namespace Its.PleaseProtect.Api.Services
             repository!.SetCustomOrgId(orgId);
             var result = repository!.GetJobs(param);
 
-            foreach (var job in result)
-            {
-                job.Configuration = "";
-            }
+            //foreach (var job in result)
+            //{
+            //    job.Configuration = "";
+            //}
 
             return result;
         }
