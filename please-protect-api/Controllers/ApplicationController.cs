@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Its.PleaseProtect.Api.Services;
 using Its.PleaseProtect.Api.Utils;
+using Its.PleaseProtect.Api.Models;
 
 namespace Its.PleaseProtect.Api.Controllers
 {
@@ -89,6 +90,15 @@ namespace Its.PleaseProtect.Api.Controllers
             var git = new GitUtil(workingDir);
 
             var result = await svc.MergeDraftAppCustomConfig(id, git, appName);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/VersionUpgrade")]
+        public async Task<IActionResult> VersionUpgrade(string id, [FromBody] MVersionUpgrade versionUpgrade)
+        {
+            var result = await svc.UpgradeVersion(id, versionUpgrade);
             return Ok(result);
         }
     }

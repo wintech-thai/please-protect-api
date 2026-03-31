@@ -1,4 +1,5 @@
 using Its.PleaseProtect.Api.Models;
+using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
 
 namespace Its.PleaseProtect.Api.Services
@@ -11,5 +12,7 @@ namespace Its.PleaseProtect.Api.Services
         public Task<string> GetDraftAppCustomConfig(string orgId, GitUtil git, string appName);
         public Task<string> SaveDraftAppCustomConfig(string orgId, GitUtil git, string appName, string content);
         public Task<string> MergeDraftAppCustomConfig(string orgId, GitUtil git, string appName);
+
+        public Task<MVJob> UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade);
     }
 }
