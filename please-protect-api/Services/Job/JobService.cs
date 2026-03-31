@@ -168,8 +168,9 @@ namespace Its.PleaseProtect.Api.Services
                 }
                 
                 var parameters = JsonSerializer.Deserialize<List<MKeyValue>>(job.Configuration!);
-
                 job.Parameters = parameters!;
+
+                job.Configuration = "";
             }
 
             return result;
