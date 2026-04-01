@@ -114,7 +114,7 @@ namespace Its.PleaseProtect.Api.Services
             {
                 // clone branch main (public repo)
                 await git.CloneAsync(repoUrl);
-                await git.PullAsync("production");
+                await git.PullAsync(dataPlaneBranch);
 
                 // 3. อ่าน version.txt
                 var versionFile = Path.Combine(workingDir, "version.txt");
