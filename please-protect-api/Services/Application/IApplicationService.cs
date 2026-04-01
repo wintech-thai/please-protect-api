@@ -15,5 +15,6 @@ namespace Its.PleaseProtect.Api.Services
 
         public Task<MVJob> UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade);
         public Task<IEnumerable<MJob>> GetUpgradeHistory(string orgId);
+        public Task<string> GetRemoteVersion(string orgId, GitUtil git);
     }
 }

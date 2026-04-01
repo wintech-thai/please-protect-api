@@ -94,6 +94,18 @@ namespace Its.PleaseProtect.Api.Controllers
         }
 
         [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetRemoteVersion")]
+        public async Task<IActionResult> GetRemoteVersion(string id)
+        {
+            var workingDir = Path.Combine(gitSyncBaseDir, $"control-plane-{Guid.NewGuid()}");
+            var git = new GitUtil(workingDir);
+
+            var result = await svc.GetRemoteVersion(id, git);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
         [HttpPost]
         [Route("org/{id}/action/VersionUpgrade")]
         public async Task<IActionResult> VersionUpgrade(string id, [FromBody] MVersionUpgrade versionUpgrade)

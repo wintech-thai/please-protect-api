@@ -3,6 +3,7 @@ using Its.PleaseProtect.Api.Models;
 using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
 using Its.PleaseProtect.Api.ViewsModels;
+using Serilog;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -11,6 +12,7 @@ namespace Its.PleaseProtect.Api.Services
     public class ApplicationService : BaseService, IApplicationService
     {
         private readonly string dataPlaneUrl = "http://gitea-http.gitea.svc.cluster.local:3000/local/data-plane.git";
+        private readonly string controlPlaneUrl = "http://gitea-http.gitea.svc.cluster.local:3000/local/control-plane.git";
         private readonly string dataPlaneBranch = "main";
         private readonly string dataPlaneDraftBranch = "draft";
         private readonly IJobService _jobService;
@@ -97,6 +99,45 @@ namespace Its.PleaseProtect.Api.Services
                 }
             }
             return current;
+        }
+
+        public async Task<string> GetRemoteVersion(string orgId, GitUtil git)
+        {
+            var repoUrl = Environment.GetEnvironmentVariable("PP_CONTROL_PLANE_REMOTE_REPO");
+            if (string.IsNullOrWhiteSpace(repoUrl))
+                throw new Exception("ERROR:env variable PP_CONTROL_PLANE_REMOTE_REPO is not set");
+
+            var workingDir = git.GetWorkingDir();
+            var errMsg = "";
+
+            try
+            {
+                // clone branch main (public repo)
+                await git.CloneAsync(repoUrl);
+                await git.PullAsync("main");
+
+                // 3. อ่าน version.txt
+                var versionFile = Path.Combine(workingDir, "version.txt");
+
+                if (!File.Exists(versionFile))
+                    throw new Exception("ERROR:version.txt not found in repo");
+
+                var version = await File.ReadAllTextAsync(versionFile);
+
+                // 4. return
+                return version.Trim();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{ex.Message}");
+                errMsg = ex.Message;
+            }
+            finally
+            {
+                git.Cleanup();
+            }
+
+            return errMsg;
         }
 
         public async Task<List<MApplication>> GetApplications(string orgId, GitUtil git, bool withCleanup)
