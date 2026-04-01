@@ -18,3 +18,10 @@ result = make_request(:get, apiUrl, param)
 
 #json = result.to_json
 puts(result)
+
+apiUrl = "api/Application/org/#{orgId}/action/GetLocalVersion"
+param = nil
+result = make_request(:get, apiUrl, param)
+
+#json = result.to_json
+puts(result)

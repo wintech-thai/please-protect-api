@@ -13,8 +13,9 @@ namespace Its.PleaseProtect.Api.Services
         public Task<string> SaveDraftAppCustomConfig(string orgId, GitUtil git, string appName, string content);
         public Task<string> MergeDraftAppCustomConfig(string orgId, GitUtil git, string appName);
 
-        public Task<MVJob> UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade);
-        public Task<IEnumerable<MJob>> GetUpgradeHistory(string orgId);
+        public MVJob UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade);
+        public IEnumerable<MJob> GetUpgradeHistory(string orgId);
         public Task<string> GetRemoteVersion(string orgId, GitUtil git);
+        public Task<string> GetLocalVersion(string orgId, GitUtil git);
     }
 }
