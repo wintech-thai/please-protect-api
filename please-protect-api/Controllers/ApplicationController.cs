@@ -94,20 +94,44 @@ namespace Its.PleaseProtect.Api.Controllers
         }
 
         [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetRemoteVersion")]
+        public async Task<IActionResult> GetRemoteVersion(string id)
+        {
+            var workingDir = Path.Combine(gitSyncBaseDir, $"data-plane-{Guid.NewGuid()}");
+            var git = new GitUtil(workingDir);
+
+            var result = await svc.GetRemoteVersion(id, git);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [Route("org/{id}/action/GetLocalVersion")]
+        public async Task<IActionResult> GetLocalVersion(string id)
+        {
+            var workingDir = Path.Combine(gitSyncBaseDir, $"data-plane-{Guid.NewGuid()}");
+            var git = new GitUtil(workingDir);
+
+            var result = await svc.GetLocalVersion(id, git);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
         [HttpPost]
         [Route("org/{id}/action/VersionUpgrade")]
-        public async Task<IActionResult> VersionUpgrade(string id, [FromBody] MVersionUpgrade versionUpgrade)
+        public IActionResult VersionUpgrade(string id, [FromBody] MVersionUpgrade versionUpgrade)
         {
-            var result = await svc.UpgradeVersion(id, versionUpgrade);
+            var result = svc.UpgradeVersion(id, versionUpgrade);
             return Ok(result);
         }
 
         [ExcludeFromCodeCoverage]
         [HttpGet]
         [Route("org/{id}/action/GetUpgradeHistory")]
-        public async Task<IActionResult> GetUpgradeHistory(string id)
+        public IActionResult GetUpgradeHistory(string id)
         {
-            var result = await svc.GetUpgradeHistory(id);
+            var result = svc.GetUpgradeHistory(id);
             return Ok(result);
         }
     }

@@ -3,6 +3,7 @@ using Its.PleaseProtect.Api.Models;
 using Its.PleaseProtect.Api.ModelsViews;
 using Its.PleaseProtect.Api.Utils;
 using Its.PleaseProtect.Api.ViewsModels;
+using Serilog;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -11,6 +12,7 @@ namespace Its.PleaseProtect.Api.Services
     public class ApplicationService : BaseService, IApplicationService
     {
         private readonly string dataPlaneUrl = "http://gitea-http.gitea.svc.cluster.local:3000/local/data-plane.git";
+
         private readonly string dataPlaneBranch = "main";
         private readonly string dataPlaneDraftBranch = "draft";
         private readonly IJobService _jobService;
@@ -20,7 +22,7 @@ namespace Its.PleaseProtect.Api.Services
             _jobService = jobService;
         }
 
-        public async Task<IEnumerable<MJob>> GetUpgradeHistory(string orgId)
+        public IEnumerable<MJob> GetUpgradeHistory(string orgId)
         {
             var vmJob = new VMJob()
             {
@@ -31,7 +33,7 @@ namespace Its.PleaseProtect.Api.Services
             return jobs;
         }
 
-        public async Task<MVJob> UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade)
+        public MVJob UpgradeVersion(string orgId, MVersionUpgrade versionUpgrade)
         {
             var r = new MVJob()
             {
@@ -97,6 +99,81 @@ namespace Its.PleaseProtect.Api.Services
                 }
             }
             return current;
+        }
+
+        public async Task<string> GetRemoteVersion(string orgId, GitUtil git)
+        {
+            var repoUrl = Environment.GetEnvironmentVariable("PP_DATA_PLANE_REMOTE_REPO");
+            if (string.IsNullOrWhiteSpace(repoUrl))
+                throw new Exception("ERROR:env variable PP_DATA_PLANE_REMOTE_REPO is not set");
+
+            var workingDir = git.GetWorkingDir();
+            var errMsg = "";
+
+            try
+            {
+                // clone branch main (public repo)
+                await git.CloneAsync(repoUrl);
+                await git.PullAsync(dataPlaneBranch);
+
+                // 3. อ่าน version.txt
+                var versionFile = Path.Combine(workingDir, "version.txt");
+
+                if (!File.Exists(versionFile))
+                    throw new Exception("ERROR:version.txt not found in repo");
+
+                var version = await File.ReadAllTextAsync(versionFile);
+
+                // 4. return
+                return version.Trim();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{ex.Message}");
+                errMsg = ex.Message;
+            }
+            finally
+            {
+                git.Cleanup();
+            }
+
+            return errMsg;
+        }
+
+        public async Task<string> GetLocalVersion(string orgId, GitUtil git)
+        {
+            var workingDir = git.GetWorkingDir();
+            var errMsg = "";
+
+            try
+            {
+                // clone branch main (public repo)
+                await git.CloneAsync(dataPlaneUrl);
+                await git.PullAsync(dataPlaneBranch);
+
+                // 3. อ่าน version.txt
+                var versionFile = Path.Combine(workingDir, "version.txt");
+
+                var version = "v0.0.0-initial";
+                if (File.Exists(versionFile))
+                {
+                    version = await File.ReadAllTextAsync(versionFile);
+                }
+
+                // 4. return
+                return version.Trim();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{ex.Message}");
+                errMsg = ex.Message;
+            }
+            finally
+            {
+                git.Cleanup();
+            }
+
+            return errMsg;
         }
 
         public async Task<List<MApplication>> GetApplications(string orgId, GitUtil git, bool withCleanup)
