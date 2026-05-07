@@ -17,9 +17,9 @@ param = {
   ConfigValue: "Set this to JSON string of the geolocation you want to set. Example: {\"latitude\": 40.7128, \"longitude\": -74.0060}"
 }
 
-#result = make_request(:post, apiUrl, param)
-#json = result.to_json
-#puts(json)
+result = make_request(:post, apiUrl, param)
+json = result.to_json
+puts(json)
 
 apiUrl = "api/Configuration/org/#{orgId}/action/GetCurrentGeoLocation"
 param = nil
