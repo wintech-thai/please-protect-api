@@ -24,5 +24,8 @@ namespace Its.PleaseProtect.Api.Services
         public Task<MVConfiguration> SetCloudConnectKey(string orgId, string cloudConnectKey);
         public Task<MVConfiguration?> GetCloudConnectFlag(string orgId);
         public Task<MVConfiguration> SetCloudConnectFlag(string orgId, string cloudConnectFlag);
+
+        public Task<MVConfiguration?> GetCurrentGeoLocation(string orgId);
+        public Task<MVConfiguration> SetCurrentGeoLocation(string orgId, string geoLocation);
     }
 }
