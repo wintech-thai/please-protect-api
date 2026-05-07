@@ -151,5 +151,24 @@ namespace Its.PleaseProtect.Api.Controllers
             var result = await svc.SetCloudConnectFlag(id, cfg.ConfigValue!);
             return Ok(result);
         }
+
+        [ExcludeFromCodeCoverage]
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("org/{id}/action/GetCurrentGeoLocation")]
+        public async Task<IActionResult> GetCurrentGeoLocation(string id)
+        {
+            var result = await svc.GetCurrentGeoLocation(id);
+            return Ok(result);
+        }
+
+        [ExcludeFromCodeCoverage]
+        [HttpPost]
+        [Route("org/{id}/action/SetCurrentGeoLocation")]
+        public async Task<IActionResult> SetCurrentGeoLocation(string id, [FromBody] MConfiguration cfg)
+        {
+            var result = await svc.SetCurrentGeoLocation(id, cfg.ConfigValue!);
+            return Ok(result);
+        }
     }
 }

@@ -326,5 +326,50 @@ namespace Its.PleaseProtect.Api.Services
 
             return r;
         }
+
+        public async Task<MVConfiguration?> GetCurrentGeoLocation(string orgId)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Current geo location retrieved successfully"
+            };
+
+            var result = await repository!.GetConfigurationByType("CurrentGeoLocation");
+
+            if (result == null)
+            {
+                r.Status = "NOT_FOUND";
+                r.Description = "Current geo location not found for the specified organization";
+                return r;
+            }
+
+            r.Configuration = result;
+
+            return r;
+        }
+
+        public async Task<MVConfiguration> SetCurrentGeoLocation(string orgId, string geoLocation)
+        {
+            repository!.SetCustomOrgId(orgId);
+
+            var r = new MVConfiguration() 
+            { 
+                Status = "SUCCESS",
+                Description = "Current geo location updated successfully"
+            };
+
+            var c = await repository!.UpsertConfiguration(new MConfiguration()
+            {
+                ConfigType = "CurrentGeoLocation",
+                ConfigValue = geoLocation
+            });
+
+            r.Configuration = c;
+
+            return r;
+        }
     }
 }
