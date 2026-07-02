@@ -16,6 +16,7 @@ using Its.PleaseProtect.Api.AuditLogs;
 using System.Text;
 using System.Net.Http.Headers;
 using System.Net;
+using Microsoft.AspNetCore.Identity;
 
 namespace Its.PleaseProtect.Api
 {
@@ -73,7 +74,18 @@ namespace Its.PleaseProtect.Api
 
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
-            builder.Services.AddScoped<IAuthService, AuthService>();
+            
+            var nativeIdpFlag = Environment.GetEnvironmentVariable("IS_NATIVE_IDP");
+            if (nativeIdpFlag == "true")
+            {
+                builder.Services.AddScoped<IAuthService, AuthServiceNative>();
+            }
+            else
+            {
+                //ไม่ได้กำหนด ก็จะใช้ Keycloak แบบเดิมเพื่อให้ backword compatible
+                builder.Services.AddScoped<IAuthService, AuthServiceKeycloak>();    
+            }
+
             builder.Services.AddScoped<IOrganizationService, OrganizationService>();
             builder.Services.AddScoped<IOrganizationUserService, OrganizationUserService>();
             builder.Services.AddScoped<IUserService, UserService>();
@@ -235,6 +247,11 @@ namespace Its.PleaseProtect.Api
                 options.Providers.Add<GzipCompressionProvider>();
             });
             
+            builder.Services
+                .AddIdentityCore<IdentityUser>()
+                .AddEntityFrameworkStores<DataContext>()
+                .AddDefaultTokenProviders();
+
             var app = builder.Build();
 
             using (var scope = app.Services.CreateScope())
@@ -244,6 +261,11 @@ namespace Its.PleaseProtect.Api
 
                 var service = scope.ServiceProvider.GetRequiredService<DataSeeder>();
                 service.Seed();
+
+                if (nativeIdpFlag == "true")
+                {
+                    service.MigrateUsers();
+                }
             }
 
             // Configure the HTTP request pipeline.

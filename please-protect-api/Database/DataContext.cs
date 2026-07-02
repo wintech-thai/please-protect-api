@@ -1,11 +1,13 @@
 namespace Its.PleaseProtect.Api.Database;
 
 using Its.PleaseProtect.Api.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
 
 [ExcludeFromCodeCoverage]
-public class DataContext : DbContext, IDataContext
+public class DataContext : IdentityDbContext<IdentityUser, IdentityRole, string>, IDataContext
 {
     protected readonly IConfiguration Configuration;
 
@@ -16,9 +18,9 @@ public class DataContext : DbContext, IDataContext
 
     public DbSet<MOrganization>? Organizations { get; set; }
     public DbSet<MMasterRef>? MasterRefs { get; set; }
-    public DbSet<MRole>? Roles { get; set; }
+    public new DbSet<MRole>? Roles { get; set; }
+    public new DbSet<MUser>? Users { get; set; }
     public DbSet<MApiKey>? ApiKeys { get; set; }
-    public DbSet<MUser>? Users { get; set; }
     public DbSet<MOrganizationUser>? OrganizationUsers { get; set; }
     public DbSet<MCustomRole>? CustomRoles { get; set; }
     public DbSet<MDocument>? Documents { get; set; }
@@ -31,6 +33,8 @@ public class DataContext : DbContext, IDataContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<MMasterRef>()
             .HasIndex(t => new { t.OrgId, t.Code }).IsUnique();
 

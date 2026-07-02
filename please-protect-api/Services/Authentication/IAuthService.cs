@@ -7,7 +7,11 @@ namespace Its.PleaseProtect.Api.Services
     public interface IAuthService
     {
         public UserToken Login(UserLogin userLogin);
+        public Task<UserToken> LoginV2(UserLogin userLogin);
+
         public UserToken RefreshToken(string token);
+        public Task<UserToken> RefreshTokenV2(string token);
+        
         public SecurityToken ValidateAccessToken(string accessToken, JwtSecurityTokenHandler tokenHandler);
         public Task<IdpResult> AddUserToIDP(MOrganizeRegistration orgUser);
         public Task<IdpResult> ChangeUserPasswordIdp(MUpdatePassword password);

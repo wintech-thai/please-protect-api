@@ -4,16 +4,29 @@ using Serilog;
 using System.Diagnostics.CodeAnalysis;
 using PasswordGenerator;
 using Its.PleaseProtect.Api.Models;
+using Its.PleaseProtect.Api.Database.Repositories;
+using Microsoft.AspNetCore.Identity;
+using Its.PleaseProtect.Api.Utils;
 
 [ExcludeFromCodeCoverage]
 public class DataSeeder
 {
     private readonly DataContext context;
     private readonly Password pwd = new Password(32);
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly IOrganizationUserRepository _orgUserRepo;
+    private readonly IUserRepository _userRepo;
 
-    public DataSeeder(DataContext ctx)
+    public DataSeeder(
+        DataContext ctx,
+        IUserRepository userRepo,
+        IOrganizationUserRepository orgUserRepo,
+        UserManager<IdentityUser> userManager)
     {
         context = ctx;
+        _userRepo = userRepo;
+        _orgUserRepo = orgUserRepo;
+        _userManager = userManager;
     }
 
     private void SeedDefaultOrganization()
@@ -195,6 +208,19 @@ public class DataSeeder
 
         context.OrganizationUsers!.Add(ou);
 
+
+        var idpUser = new IdentityUser
+        {
+            UserName = u.UserName,
+            Email = u.UserEmail,
+        };
+
+        var initialPassword = ServiceUtils.GeneratePassword();
+        var t2 = _userManager.CreateAsync(idpUser, initialPassword);
+        var result = t2.Result;
+
+        Console.WriteLine($"##### MigrateUsers : Added [{u.UserName}] [{initialPassword}] [{result.Succeeded}]");
+
         context.SaveChanges();
     }
 
@@ -208,5 +234,32 @@ public class DataSeeder
         UpdateApiKeyRole();
 
         SeedInitialAdminUser();
+    }
+
+    public void MigrateUsers()
+    {
+        var users = context.Users!.ToList();
+        foreach (var u in users)
+        {
+            //ใช้สำหรับ migrate user จาก KeycloakIDP มายัง NativeIDP
+            Console.WriteLine($"MigrateUsers : Checking for user [{u.UserName}]...");
+            var t1 = _userManager.FindByNameAsync(u.UserName!);
+
+            var user = t1.Result;
+            if (user == null)
+            {
+                user = new IdentityUser
+                {
+                    UserName = u.UserName,
+                    Email = u.UserEmail,
+                };
+
+                var initialPassword = ServiceUtils.GeneratePassword();
+                var t2 = _userManager.CreateAsync(user, initialPassword);
+                var result = t2.Result;
+
+                Console.WriteLine($"MigrateUsers : Added [{u.UserName}] [{initialPassword}] [{result.Succeeded}] [{result.Errors.FirstOrDefault()?.Description}]");
+            }
+        }
     }
 }

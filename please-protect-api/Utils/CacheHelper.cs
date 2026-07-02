@@ -101,5 +101,20 @@ namespace Its.PleaseProtect.Api.Utils
             //TODO : Use environment as key component
             return $"{orgId}:ScanItemTemplate";
         }
+
+        public static string CreateJwtSignKey()
+        {
+            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Local";
+            var key = $"JwtSignKey:{environment}:CreateJwtSignKey";
+            return key;
+        }
+
+        public static string CreateRefreshTokenKey(string uid)
+        {
+            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Local";
+            var key = $"RefreshToken:{environment}:{uid}";
+            return key;
+        }
+
     }
 }
