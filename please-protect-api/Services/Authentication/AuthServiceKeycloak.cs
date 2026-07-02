@@ -18,7 +18,7 @@ namespace Its.PleaseProtect.Api.Services
         public string Email { get; set; } = string.Empty;
     }
 
-    public class AuthService : BaseService, IAuthService
+    public class AuthServiceKeycloak : BaseService, IAuthService
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly string tokenEndpoint = "";
@@ -36,7 +36,7 @@ namespace Its.PleaseProtect.Api.Services
         private IJwtSigner signer = new JwtSigner();
 
 
-        public AuthService(IHttpClientFactory httpClientFactory, IRedisHelper redis) : base()
+        public AuthServiceKeycloak(IHttpClientFactory httpClientFactory, IRedisHelper redis) : base()
         {
             _redis = redis;
             _httpClientFactory = httpClientFactory;
@@ -299,6 +299,18 @@ namespace Its.PleaseProtect.Api.Services
             return result;
         }
 
+        public async Task<UserToken> LoginV2(UserLogin userLogin)
+        {
+            await Task.CompletedTask;
+            return new UserToken();
+        }
+
+        public async Task<UserToken> RefreshTokenV2(string token)
+        {
+            await Task.CompletedTask;
+            return new UserToken();
+        }
+        
         public async Task<IdpResult> GetUserIdByUsernameAsync(string username, string token)
         {
             var ep = getUserIdEndpoint.Replace("<<user-name>>", username);
