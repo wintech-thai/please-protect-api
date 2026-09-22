@@ -133,7 +133,7 @@ jobs:
         webhook-url: ${{ secrets.DISCORD_CICD_WEBHOOK }}
         embed-title: '🚀 CI/CD Deployment Started'
         embed-description: |
-          Service: `please-payment-admin`
+          Service: `please-protect-apis`
           Version: `${{ needs.build1.outputs.imageTag }}`
           Environment: `${{ needs.build1.outputs.autoDeployEnv }}`
         embed-color: 16776960
@@ -190,7 +190,7 @@ jobs:
         webhook-url: ${{ secrets.DISCORD_CICD_WEBHOOK }}
         embed-title: '🚀 CI/CD Deployment Completed'
         embed-description: |
-          Service: `please-payment-admin`
+          Service: `please-protect-apis`
           Version: `${{ needs.build1.outputs.imageTag }}`
           Environment: `${{ needs.build1.outputs.autoDeployEnv }}`
         embed-color: 5763719
